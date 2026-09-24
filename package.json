@@ -1,0 +1,46 @@
+{
+  "name": "commit-in",
+  "version": "0.1.0",
+  "description": "AI-powered git commit message suggestions that match your repository's style",
+  "type": "module",
+  "bin": {
+    "commit-in": "./dist/cli.js",
+    "ci": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.12.0"
+  },
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "eval": "tsx scripts/eval.ts"
+  },
+  "keywords": [
+    "git",
+    "commit",
+    "cli",
+    "ai",
+    "commit-message"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@clack/prompts": "^1.8.1",
+    "commander": "^15.0.0",
+    "execa": "^9.5.2",
+    "picocolors": "^1.1.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

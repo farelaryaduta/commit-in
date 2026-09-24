@@ -1,0 +1,25 @@
+import { describe, expect, it } from "vitest";
+import { createProgram } from "../src/cli";
+
+describe("cli program", () => {
+  it("exposes a help text mentioning the command name", () => {
+    const info = createProgram().helpInformation();
+    expect(info).toMatch(/Usage: commit-in/);
+    expect(info).toContain("AI commit message suggestions");
+  });
+
+  it("reports the package version via --version", () => {
+    const program = createProgram().exitOverride();
+    let out = "";
+    program.configureOutput({
+      writeOut: (str) => {
+        out += str;
+      },
+      writeErr: (str) => {
+        out += str;
+      },
+    });
+    expect(() => program.parse(["node", "commit-in", "--version"])).toThrow();
+    expect(out.trim()).toMatch(/^\d+\.\d+\.\d+$/);
+  });
+});
