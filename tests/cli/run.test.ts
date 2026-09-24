@@ -9,12 +9,15 @@ import { execa } from "execa";
 function baseOptions(partial: Partial<RunOptions> = {}): RunOptions {
   return {
     stagedOnly: false,
+    all: false,
     commit: true,
     push: false,
     dryRun: false,
     echo: false,
     full: false,
     yes: true,
+    offline: false,
+    verbose: false,
     noVerify: false,
     ...partial,
   };
@@ -217,6 +220,74 @@ describe("runCli", () => {
       );
       expect(code).toBe(EXIT_CANCEL);
       expect(await logSubjects(repo)).toHaveLength(1);
+    } finally {
+      repo.cleanup();
+    }
+  });
+
+  it("--offline uses rule-based suggestions", async () => {
+    const repo = await TempRepo.init();
+    try {
+      repo.writeFile("a.txt", "x\n");
+      await repo.addAll();
+      await repo.commit("chore: init");
+      repo.writeFile("a.txt", "x\ny\n");
+      await repo.addAll();
+      const out: string[] = [];
+      const deps = await depsFor(repo);
+      deps.out = (m) => out.push(m);
+      deps.providerOverride = undefined;
+      const code = await runCli(
+        baseOptions({ dryRun: true, commit: false, offline: true }),
+        deps,
+      );
+      expect(code).toBe(EXIT_OK);
+      expect(out.join("\n")).toContain("docs: update documentation");
+      expect(await logSubjects(repo)).toHaveLength(1);
+    } finally {
+      repo.cleanup();
+    }
+  });
+
+  it("falls back to rule-based suggestions when the provider fails", async () => {
+    const repo = await TempRepo.init();
+    try {
+      repo.writeFile("a.txt", "x\n");
+      await repo.addAll();
+      await repo.commit("chore: init");
+      repo.writeFile("a.txt", "x\ny\n");
+      await repo.addAll();
+      const out: string[] = [];
+      const deps = await depsFor(repo);
+      deps.out = (m) => out.push(m);
+      deps.providerOverride = {
+        name: "boom",
+        generate: async () => {
+          throw new Error("boom");
+        },
+      };
+      const code = await runCli(
+        baseOptions({ dryRun: true, commit: false }),
+        deps,
+      );
+      expect(code).toBe(EXIT_OK);
+      expect(out.join("\n")).toContain("docs: update documentation");
+      expect(await logSubjects(repo)).toHaveLength(1);
+    } finally {
+      repo.cleanup();
+    }
+  });
+
+  it("-a stages tracked working-tree changes first", async () => {
+    const repo = await TempRepo.init();
+    try {
+      repo.writeFile("a.txt", "one\n");
+      await repo.addAll();
+      await repo.commit("chore: init");
+      repo.writeFile("a.txt", "one\ntwo\n");
+      const code = await runCli(baseOptions({ all: true }), await depsFor(repo));
+      expect(code).toBe(EXIT_OK);
+      expect((await logSubjects(repo))[0]).toBe("feat(api): add login endpoint");
     } finally {
       repo.cleanup();
     }

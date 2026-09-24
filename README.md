@@ -21,8 +21,9 @@ npx commit-in
   credentials are never sent to the model. Secrets in diffs are redacted.
 - **Diff budget.** Per-file and total diff limits (defaults 2000/12000 chars)
   keep prompts cheap while prioritizing source files.
-- **Offline mode.** `--provider fake` runs the full flow with canned
-  suggestions — great for testing and demos.
+- **Offline mode.** `--provider fake` or `--offline` runs the full flow with
+  canned or rule-based suggestions — great for testing, demos, and no-network
+  environments.
 - **Automatic staging.** With nothing staged, `commit-in` offers to stage all
   tracked working-tree changes (choose faster than `git add`), or pick files
   individually. `--stageddonly` forbids auto-staging.
@@ -55,7 +56,8 @@ setx DEEPSEEK_API_KEY sk-...
 ```
 
 Without a key `commit-in` fails fast with setup instructions — it never guesses
-or silently downgrades. Use `--provider fake` to try it offline.
+or silently downgrades. Use `--provider fake` (canned) or `--offline`
+(rule-based) to try it without a key.
 
 ## Usage
 
@@ -82,12 +84,15 @@ commit-in -e --full   # include the full, untruncated diff
 | Flag | Meaning |
 | --- | --- |
 | `--stageddonly` | Never auto-stage; only use already-staged files |
+| `-a, --all` | Stage all tracked working-tree changes first (`git add -u`) |
 | `-c, --commit` | Skip the final confirmation, run `git commit` |
 | `-n, --dry-run` | Print the chosen message without committing |
 | `--push` | Run `git push` after a successful commit |
-| `-e, --echo` | Print the model prompt and exit |
+| `-e, --echo` / `--show-prompt` | Print the model prompt and exit |
 | `--full` | With `--echo`, also print the full diff |
 | `-y, --yes` | Skip all prompts; use the first suggestion |
+| `--offline` | Skip the provider; use rule-based suggestions |
+| `--verbose` | Print diagnostics (provider, model, latency) |
 | `-t, --type <type>` | Force a commit type (`feat`, `fix`, `refactor`, …) |
 | `-s, --scope <scope>` | Force a commit scope |
 | `--count <n>` | Number of suggestions to request (1–5) |
@@ -166,5 +171,6 @@ npm run eval               # manual real-model evaluation (requires key)
 2. Classify each file (presets + generic rules) and infer a type/scope hint.
 3. Learn repo style from recent history (ignoring merges/reverts).
 4. Budget and redact diffs; assemble the system+user prompt.
-5. Ask DeepSeek for suggestions; parse them robustly.
+5. Ask DeepSeek for suggestions; parse them robustly. On provider failure (or
+   `--offline`), fall back to deterministic rule-based suggestions.
 6. Let you pick, edit, or write a message; commit with `git commit -F -`.

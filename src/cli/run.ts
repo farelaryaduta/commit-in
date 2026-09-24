@@ -22,7 +22,13 @@ import {
 } from "../git";
 import { run } from "../git/run";
 import { buildPrompt, parseSuggestions } from "../prompt";
-import { ProviderError, FakeProvider, DeepSeekProvider } from "../providers";
+import {
+  ProviderError,
+  FakeProvider,
+  DeepSeekProvider,
+  fallbackSuggestions,
+  DEEPSEEK_MODEL,
+} from "../providers";
 import type { LLMProvider } from "../providers";
 import { loadConfig, type ResolvedConfig } from "../config";
 import { CancelError, type Prompts } from "../ui";
@@ -35,12 +41,15 @@ export const EXIT_CANCEL = 130;
 
 export interface RunOptions {
   stagedOnly: boolean;
+  all: boolean;
   commit: boolean;
   push: boolean;
   dryRun: boolean;
   echo: boolean;
   full: boolean;
   yes: boolean;
+  offline: boolean;
+  verbose: boolean;
   count?: number;
   provider?: "deepseek" | "fake";
   language?: "auto" | "en" | "id";
@@ -99,6 +108,10 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
 
   // ---- staged files  ------------------------------------------
   let staged = await getStagedFiles(root);
+  if (opts.all) {
+    await stageTracked(root);
+    staged = await getStagedFiles(root);
+  }
   if (staged.length === 0) {
     const working: WorkingTreeFile[] = await getWorkingTreeChanges(root);
     if (working.length === 0) {
@@ -220,8 +233,9 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
   }
 
   // ---- provider -----------------------------------------------------------
-  const provider = resolveProviderFor(config, deps);
-  if (provider === null) {
+  const started = Date.now();
+  const provider = opts.offline ? null : resolveProviderFor(config, deps);
+  if (provider === null && !opts.offline) {
     err(
       "DEEPSEEK_API_KEY is not set.\n" +
         "  Export it (PowerShell: `$env:DEEPSEEK_API_KEY=\"sk-...\"`),\n" +
@@ -234,18 +248,35 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
   }
 
   // ---- generate + parse ----------------------------------------------------
-  let raw: string;
-  try {
-    raw = await provider.generate(request);
-  } catch (e) {
-    reportProviderError(err, e);
-    return EXIT_ERROR;
+  let raw: string | undefined;
+  if (!opts.offline && provider) {
+    try {
+      raw = await provider.generate(request);
+    } catch (e) {
+      reportProviderError(err, e);
+      err("warning: provider failed — using rule-based suggestions");
+    }
   }
 
-  let suggestions = parseSuggestions(raw, style, change.typeHint, config.count);
+  if (opts.verbose) {
+    const latency = Date.now() - started;
+    err(
+      `verbose: provider=${opts.offline ? "fallback" : provider?.name} model=${
+        opts.offline ? "-" : (config.model ?? DEEPSEEK_MODEL)
+      } latency=${latency}ms`,
+    );
+  }
+
+  let suggestions: Suggestion[];
+  if (!raw) {
+    suggestions = fallbackSuggestions(change, style);
+  } else {
+    suggestions = parseSuggestions(raw, style, change.typeHint, config.count);
+  }
+
   if (suggestions.length === 0) {
     const manual = await prompts.text({
-      message: "No suggestions parsed. Paste a commit subject (or Enter to abort)",
+      message: "No usable suggestions. Paste a commit subject (or Enter to abort)",
     });
     if (manual === undefined) return EXIT_CANCEL;
     suggestions = [{ subject: manual }];

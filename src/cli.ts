@@ -3,8 +3,15 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Command } from "commander";
-import { runCli, EXIT_OK, EXIT_ERROR, type RunOptions } from "./cli/run";
+import { runCli, EXIT_OK, EXIT_USAGE, EXIT_ERROR, type RunOptions } from "./cli/run";
 import { clackPrompts } from "./ui";
+
+const TYPES = [
+  "feat", "fix", "refactor", "docs", "test", "chore", "ci", "style", "perf", "build",
+] as const;
+const PROVIDERS = ["deepseek", "fake"] as const;
+const LANGUAGES = ["auto", "en", "id"] as const;
+const COMMIT_TYPES = new Set<string>(TYPES);
 
 function readVersion(): string {
   const here = dirname(fileURLToPath(import.meta.url));
@@ -22,20 +29,22 @@ export function createProgram(): Command {
       "--stageddonly",
       "only use pre-staged files; never auto-stage working-tree changes",
     )
+    .option("-a, --all", "stage all tracked working-tree changes first (git add -u)")
     .option("-c, --commit", "skip the final confirmation and run git commit")
     .option("-n, --dry-run", "print the chosen message without committing")
     .option("--push", "run git push after a successful commit")
     .option("-e, --echo", "print the model prompt and exit without calling the model")
+    .option("--show-prompt", "alias for --echo")
     .option("--full", "with --echo, also print the full (untruncated) diff")
     .option("-y, --yes", "skip all prompts; pick the first suggestion")
-    .option("-t, --type <type>", "force a conventional commit type", [
-      "feat", "fix", "refactor", "docs", "test", "chore", "ci", "style", "perf", "build",
-    ])
+    .option("--offline", "skip the provider and use rule-based suggestions")
+    .option("--verbose", "print diagnostics (provider, model, latency)")
+    .option("-t, --type <type>", "force a conventional commit type")
     .option("-s, --scope <scope>", "force a conventional commit scope")
     .option("--count <count>", "number of suggestions to request (1-5)", "3")
-    .option("--provider <provider>", "model provider", ["deepseek", "fake"])
+    .option("--provider <provider>", "model provider")
     .option("--model <model>", "override the model identifier")
-    .option("--language <language>", "force suggestion language", ["auto", "en", "id"])
+    .option("--language <language>", "force suggestion language")
     .option("--body", "capture an optional body after selecting a suggestion")
     .option("--force-conventional", "force Conventional Commits style even with plain history")
     .option("--no-verify", "pass --no-verify to git commit")
@@ -53,12 +62,15 @@ export function main(argv: string[]): void {
 
   const runOptions: RunOptions = {
     stagedOnly: Boolean(opts.stageddonly),
+    all: Boolean(opts.all),
     commit: Boolean(opts.commit),
     push: Boolean(opts.push),
     dryRun: Boolean(opts.dryRun),
-    echo: Boolean(opts.echo),
+    echo: Boolean(opts.echo) || Boolean(opts.showPrompt),
     full: Boolean(opts.full),
     yes: Boolean(opts.yes),
+    offline: Boolean(opts.offline),
+    verbose: Boolean(opts.verbose),
     noVerify: !opts.noVerify,
     provider: opts.provider as "deepseek" | "fake" | undefined,
     model: opts.model as string | undefined,
@@ -70,6 +82,37 @@ export function main(argv: string[]): void {
   };
   const count = Number(opts.count);
   if (Number.isInteger(count) && count >= 1 && count <= 5) runOptions.count = count;
+
+  if (
+    runOptions.type !== undefined &&
+    !COMMIT_TYPES.has(runOptions.type)
+  ) {
+    process.stderr.write(
+      `error: invalid commit type "${runOptions.type}" (expected one of: ${TYPES.join(", ")})\n`,
+    );
+    process.exitCode = EXIT_USAGE;
+    return;
+  }
+  if (
+    runOptions.provider !== undefined &&
+    !PROVIDERS.includes(runOptions.provider)
+  ) {
+    process.stderr.write(
+      `error: invalid provider "${runOptions.provider}" (expected one of: ${PROVIDERS.join(", ")})\n`,
+    );
+    process.exitCode = EXIT_USAGE;
+    return;
+  }
+  if (
+    runOptions.language !== undefined &&
+    !LANGUAGES.includes(runOptions.language)
+  ) {
+    process.stderr.write(
+      `error: invalid language "${runOptions.language}" (expected one of: ${LANGUAGES.join(", ")})\n`,
+    );
+    process.exitCode = EXIT_USAGE;
+    return;
+  }
 
   runCli(runOptions, {
     cwd: process.cwd(),
