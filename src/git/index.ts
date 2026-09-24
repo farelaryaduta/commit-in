@@ -5,6 +5,7 @@ export {
   isGitRepo,
   getRepoRoot,
   getStagedDiff,
+  getStagedDiffByFile,
   parseNameStatus,
   parseNumstat,
 } from "./staged";

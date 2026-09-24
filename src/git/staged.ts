@@ -177,3 +177,28 @@ export async function getStagedDiff(
   requireOk(cwd, args, res);
   return res.stdout;
 }
+
+/**
+ * Per-file unified diffs keyed by path (binary files come back empty).
+ * Fetches files in parallel; missing files are simply not present.
+ */
+export async function getStagedDiffByFile(
+  cwd: string,
+  paths: string[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  await Promise.all(
+    paths.map(async (path) => {
+      const res = await run(cwd, [
+        "diff",
+        "--staged",
+        "--no-ext-diff",
+        "--no-color",
+        "--",
+        path,
+      ]);
+      if (res.ok) out.set(path, res.stdout);
+    }),
+  );
+  return out;
+}

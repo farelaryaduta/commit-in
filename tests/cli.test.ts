@@ -5,7 +5,8 @@ describe("cli program", () => {
   it("exposes a help text mentioning the command name", () => {
     const info = createProgram().helpInformation();
     expect(info).toMatch(/Usage: commit-in/);
-    expect(info).toContain("AI commit message suggestions");
+    expect(info).toContain("git commit messages");
+    expect(info).toContain("--echo");
   });
 
   it("reports the package version via --version", () => {

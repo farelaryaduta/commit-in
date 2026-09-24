@@ -2,8 +2,15 @@ import { execa } from "execa";
 import { requireOk, run } from "./run";
 
 /** Run `git commit -F -` with the message on stdin. Never uses `--no-verify`. */
-export async function commit(cwd: string, message: string): Promise<string> {
-  const res = await execa("git", ["commit", "-F", "-"], {
+export async function commit(
+  cwd: string,
+  message: string,
+  noVerify = false,
+): Promise<string> {
+  const args = noVerify
+    ? ["commit", "-F", "-", "--no-verify"]
+    : ["commit", "-F", "-"];
+  const res = await execa("git", args, {
     cwd,
     input: message,
     reject: false,
