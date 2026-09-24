@@ -18,7 +18,8 @@
     "build": "tsup",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "eval": "tsx scripts/eval.ts"
+    "eval": "tsx scripts/eval.ts",
+    "serve": "node server/server.mjs"
   },
   "keywords": [
     "git",

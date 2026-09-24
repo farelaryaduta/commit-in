@@ -25,10 +25,8 @@ import { run } from "../git/run";
 import { buildPrompt, parseSuggestions } from "../prompt";
 import {
   ProviderError,
-  FakeProvider,
-  DeepSeekProvider,
+  RemoteProvider,
   fallbackSuggestions,
-  DEEPSEEK_MODEL,
 } from "../providers";
 import type { LLMProvider } from "../providers";
 import { loadConfig, type ResolvedConfig } from "../config";
@@ -52,11 +50,10 @@ export interface RunOptions {
   offline: boolean;
   verbose: boolean;
   count?: number;
-  provider?: "deepseek" | "fake";
+  apiUrl?: string;
   language?: "auto" | "en" | "id";
   type?: CommitType;
   scope?: string;
-  model?: string;
   body?: boolean;
   noVerify: boolean;
   forceConventional?: boolean;
@@ -102,8 +99,7 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
   const loaded = loadConfig(root, env);
   for (const w of loaded.warnings) err(`warning: ${w}`);
   const config = loaded.config;
-  if (opts.provider) config.provider = opts.provider;
-  if (opts.model) config.model = opts.model;
+  if (opts.apiUrl) config.apiUrl = opts.apiUrl;
   if (opts.count !== undefined) config.count = opts.count;
   if (opts.forceConventional) config.forceConventional = true;
   if (opts.language) config.language = opts.language;
@@ -268,14 +264,12 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
   const provider = opts.offline ? null : resolveProviderFor(config, deps);
   if (provider === null && !opts.offline) {
     err(
-      "DEEPSEEK_API_KEY is not set.\n" +
-        "  Export it (PowerShell: `$env:DEEPSEEK_API_KEY=\"sk-...\"`),\n" +
-        "  add it to `.commitinrc.json`, or use `--provider fake` for offline testing.",
+      "commit-in is not configured.\n" +
+        "  Point it at your hosted commit-in service via COMMIT_IN_API_URL\n" +
+        "  or \"apiUrl\" in .commitinrc.json — or use --offline for rule-based\n" +
+        "  suggestions without a service.",
     );
     return EXIT_USAGE;
-  }
-  if (config.apiKeyFromFile && !env.DEEPSEEK_API_KEY) {
-    err("warning: API key read from config file — prefer the DEEPSEEK_API_KEY env var");
   }
 
   // ---- generate + parse ----------------------------------------------------
@@ -292,9 +286,7 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
   if (opts.verbose) {
     const latency = Date.now() - started;
     err(
-      `verbose: provider=${opts.offline ? "fallback" : provider?.name} model=${
-        opts.offline ? "-" : (config.model ?? DEEPSEEK_MODEL)
-      } latency=${latency}ms`,
+      `verbose: provider=${opts.offline ? "offline" : provider?.name ?? "-"} latency=${latency}ms`,
     );
   }
 
@@ -390,11 +382,10 @@ function resolveProviderFor(
   deps: RunDeps,
 ): LLMProvider | null {
   if (deps.providerOverride) return deps.providerOverride;
-  if (config.provider === "fake") return new FakeProvider();
-  const rawKey = deps.env.DEEPSEEK_API_KEY ?? config.apiKey;
-  if (!rawKey) return null;
-  return new DeepSeekProvider(rawKey, fetch, {
-    model: config.model,
+  if (!config.apiUrl) return null;
+  return new RemoteProvider({
+    apiUrl: config.apiUrl,
+    apiToken: config.apiToken,
     timeoutMs: config.timeoutMs,
     maxRetries: config.maxRetries,
   });
@@ -403,12 +394,12 @@ function resolveProviderFor(
 function reportProviderError(err: (msg: string) => void, e: unknown): void {
   if (e instanceof ProviderError) {
     const hints: Record<string, string> = {
-      auth: "DeepSeek rejected the API key. Double-check DEEPSEEK_API_KEY.",
+      auth: "The service rejected the request. Check COMMIT_IN_API_TOKEN.",
       timeout: "The request timed out. Try again in a moment.",
-      network: "Network error talking to DeepSeek. Check your connection.",
-      http: "DeepSeek returned an error status.",
-      empty: "DeepSeek returned an empty completion; try again.",
-      parse: "DeepSeek returned malformed JSON.",
+      network: "Network error talking to the commit-in service. Check your connection.",
+      http: "The commit-in service returned an error status.",
+      empty: "The service returned an empty completion; try again.",
+      parse: "The service returned malformed data.",
     };
     err(`error: ${e.message}`);
     const hint = hints[e.code];

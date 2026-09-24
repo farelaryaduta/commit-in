@@ -17,16 +17,15 @@ describe("loadConfig", () => {
     try {
       const { config, warnings } = loadConfig(dir, {});
       expect(config).toMatchObject({
-        provider: "deepseek",
         count: 3,
         historyDepth: 50,
         maxDiffChars: 12000,
         language: "auto",
         body: false,
         maxSubjectLength: 72,
-        apiKey: undefined,
-        apiKeyFromFile: false,
       });
+      expect(config.apiUrl).toBeUndefined();
+      expect(config.apiToken).toBeUndefined();
       expect(warnings).toEqual([]);
     } finally {
       cleanup();
@@ -38,14 +37,18 @@ describe("loadConfig", () => {
     try {
       writeFileSync(
         join(dir, ".commitinrc.json"),
-        JSON.stringify({ provider: "fake", count: 2, ignore: ["coverage/**"], apiKey: "sk-file" }),
+        JSON.stringify({
+          apiUrl: "https://ci.example.com",
+          apiToken: "secret-token",
+          count: 2,
+          ignore: ["coverage/**"],
+        }),
       );
       const { config } = loadConfig(dir, {});
-      expect(config.provider).toBe("fake");
+      expect(config.apiUrl).toBe("https://ci.example.com");
+      expect(config.apiToken).toBe("secret-token");
       expect(config.count).toBe(2);
       expect(config.ignore).toEqual(["coverage/**"]);
-      expect(config.apiKey).toBe("sk-file");
-      expect(config.apiKeyFromFile).toBe(true);
     } finally {
       cleanup();
     }
@@ -54,24 +57,26 @@ describe("loadConfig", () => {
   it("lets environment overrides win over the config file", () => {
     const { dir, cleanup } = tempDir();
     try {
-      writeFileSync(join(dir, ".commitinrc.json"), JSON.stringify({ count: 2, provider: "fake" }));
-      const { config } = loadConfig(dir, { COMMIT_IN_COUNT: "5", DEEPSEEK_API_KEY: "sk-env" });
+      writeFileSync(
+        join(dir, ".commitinrc.json"),
+        JSON.stringify({ count: 2, apiUrl: "https://file.example.com" }),
+      );
+      const { config } = loadConfig(dir, {
+        COMMIT_IN_COUNT: "5",
+        COMMIT_IN_API_URL: "https://env.example.com",
+      });
       expect(config.count).toBe(5);
-      expect(config.provider).toBe("fake");
-      expect(config.apiKey).toBe("sk-env");
+      expect(config.apiUrl).toBe("https://env.example.com");
     } finally {
       cleanup();
     }
   });
 
-  it("prefers env key over file key but still flags the file", () => {
+  it("reads the optional service token from the environment", () => {
     const { dir, cleanup } = tempDir();
     try {
-      writeFileSync(join(dir, ".commitinrc.json"), JSON.stringify({ apiKey: "sk-file" }));
-      const { config, warnings } = loadConfig(dir, { DEEPSEEK_API_KEY: "sk-env" });
-      expect(config.apiKey).toBe("sk-env");
-      expect(config.apiKeyFromFile).toBe(true);
-      expect(warnings).toEqual([]);
+      const { config } = loadConfig(dir, { COMMIT_IN_API_TOKEN: "tok" });
+      expect(config.apiToken).toBe("tok");
     } finally {
       cleanup();
     }
@@ -93,7 +98,7 @@ describe("loadConfig", () => {
     try {
       writeFileSync(
         join(dir, ".commitinrc.json"),
-        JSON.stringify({ count: 99, provider: "wat" }),
+        JSON.stringify({ count: 99, apiUrl: "not-a-url" }),
       );
       try {
         loadConfig(dir, {});
@@ -102,7 +107,7 @@ describe("loadConfig", () => {
         expect(err).toBeInstanceOf(ConfigError);
         const msg = (err as Error).message;
         expect(msg).toContain("count");
-        expect(msg).toContain("provider");
+        expect(msg).toContain("apiUrl");
       }
     } finally {
       cleanup();
@@ -114,10 +119,10 @@ describe("loadConfig", () => {
     try {
       const { config, warnings } = loadConfig(dir, {
         COMMIT_IN_COUNT: "abc",
-        COMMIT_IN_PROVIDER: "bogus",
+        COMMIT_IN_API_URL: "not-a-url",
       });
       expect(config.count).toBe(DEFAULTS.count);
-      expect(config.provider).toBe(DEFAULTS.provider);
+      expect(config.apiUrl).toBeUndefined();
       expect(warnings.length).toBe(2);
     } finally {
       cleanup();
@@ -160,7 +165,7 @@ describe("loadConfig", () => {
     try {
       writeFileSync(join(dir, ".commitinrc.json"), JSON.stringify({ futureKey: 1 }));
       const { config } = loadConfig(dir, {});
-      expect(config.provider).toBe("deepseek");
+      expect(config.apiUrl).toBeUndefined();
     } finally {
       cleanup();
     }

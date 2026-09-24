@@ -1,7 +1,6 @@
 export {
   ConfigFileSchema,
   DEFAULTS,
-  PROVIDER_NAMES,
   LANGUAGE_VALUES,
   formatSchemaErrors,
 } from "./schema";

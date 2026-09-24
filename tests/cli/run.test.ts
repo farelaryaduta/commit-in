@@ -278,6 +278,54 @@ describe("runCli", () => {
     }
   });
 
+  it("exits 2 when no service URL is configured", async () => {
+    const repo = await TempRepo.init();
+    try {
+      repo.writeFile("a.txt", "x\n");
+      await repo.addAll();
+      await repo.commit("chore: init");
+      repo.writeFile("a.txt", "x\ny\n");
+      await repo.addAll();
+      const err: string[] = [];
+      const deps = await depsFor(repo);
+      deps.err = (m) => err.push(m);
+      deps.providerOverride = undefined;
+      const code = await runCli(baseOptions(), deps);
+      expect(code).toBe(EXIT_USAGE);
+      expect(err.join("\n")).toContain("COMMIT_IN_API_URL");
+    } finally {
+      repo.cleanup();
+    }
+  });
+
+  it("falls back to rule-based suggestions when the remote service is unreachable", async () => {
+    const repo = await TempRepo.init();
+    try {
+      repo.writeFile("a.txt", "x\n");
+      await repo.addAll();
+      await repo.commit("chore: init");
+      repo.writeFile("a.txt", "x\ny\n");
+      await repo.addAll();
+      const out: string[] = [];
+      const deps = await depsFor(repo);
+      deps.out = (m) => out.push(m);
+      deps.providerOverride = undefined;
+      const code = await runCli(
+        baseOptions({
+          dryRun: true,
+          commit: false,
+          apiUrl: "http://127.0.0.1:1",
+        }),
+        deps,
+      );
+      expect(code).toBe(EXIT_OK);
+      expect(out.join("\n")).toContain("docs: update documentation");
+      expect(await logSubjects(repo)).toHaveLength(1);
+    } finally {
+      repo.cleanup();
+    }
+  });
+
   it("-a stages tracked working-tree changes first", async () => {
     const repo = await TempRepo.init();
     try {

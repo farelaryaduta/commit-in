@@ -1,11 +1,12 @@
 /**
  * Real-model evaluation harness.
  *
- * Runs the full prompt assembly + DeepSeek call against the current repo's
- * staged changes and prints parsed suggestions as JSON for human review.
+ * Runs the full prompt assembly + a call to your hosted commit-in service
+ * against the current repo's staged changes and prints parsed suggestions as
+ * JSON for human review.
  *
  * Usage:
- *   DEEPSEEK_API_KEY=sk-... npm run eval
+ *   COMMIT_IN_API_URL=https://ci.example.com npm run eval
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -26,8 +27,8 @@ import {
   getRecentCommits,
 } from "../src/git";
 import { buildPrompt, parseSuggestions } from "../src/prompt";
-import { DeepSeekProvider } from "../src/providers";
 import {
+  RemoteProvider,
   DEFAULT_MAX_RETRIES,
   DEFAULT_TIMEOUT_MS,
 } from "../src/providers";
@@ -46,10 +47,9 @@ const cwd = process.cwd();
 const root = await getRepoRoot(cwd);
 const env: Record<string, string | undefined> = { ...process.env };
 const config = loadConfig(root, env).config;
-const apiKey = env.DEEPSEEK_API_KEY ?? config.apiKey;
 
-if (!apiKey) {
-  console.error("eval: DEEPSEEK_API_KEY is not set");
+if (!config.apiUrl) {
+  console.error("eval: COMMIT_IN_API_URL is not set");
   process.exit(1);
 }
 
@@ -90,14 +90,14 @@ const request = buildPrompt({
 });
 request.temperature = config.temperature;
 
-const provider = new DeepSeekProvider(apiKey, fetch, {
-  model: config.model,
+const provider = new RemoteProvider({
+  apiUrl: config.apiUrl,
+  apiToken: config.apiToken,
   timeoutMs: config.timeoutMs,
   maxRetries: config.maxRetries,
-  thinkingDisabled: true,
 });
 
-console.log(`commit-in eval v${version()} | provider deepseek | files ${change.totals.files}`);
+console.log(`commit-in eval v${version()} | provider remote | files ${change.totals.files}`);
 const raw = await provider.generate(request);
 const suggestions = parseSuggestions(raw, style, change.typeHint, config.count);
 console.log(JSON.stringify({ suggestions, style, requestLen: request.user.length }, null, 2));

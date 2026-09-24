@@ -53,13 +53,16 @@ function envOverrides(
 ): Partial<ResolvedConfig> {
   const out: Partial<ResolvedConfig> = {};
 
-  const provider = env.COMMIT_IN_PROVIDER;
-  if (provider !== undefined) {
-    if (provider === "deepseek" || provider === "fake") {
-      out.provider = provider;
-    } else {
-      warnInvalid(warnings, "PROVIDER", provider, "deepseek|fake");
-    }
+  const apiUrl = env.COMMIT_IN_API_URL;
+  if (apiUrl !== undefined) {
+    if (/^https?:\/\//i.test(apiUrl)) out.apiUrl = apiUrl;
+    else warnInvalid(warnings, "API_URL", apiUrl, "an http(s) URL");
+  }
+
+  const apiToken = env.COMMIT_IN_API_TOKEN;
+  if (apiToken !== undefined) {
+    if (apiToken.trim() !== "") out.apiToken = apiToken;
+    else warnInvalid(warnings, "API_TOKEN", apiToken, "a non-empty string");
   }
 
   const count = readInt(env, "COMMIT_IN_COUNT");
@@ -90,8 +93,6 @@ function envOverrides(
 
   const body = parseBool(env.COMMIT_IN_BODY);
   if (body !== undefined) out.body = body;
-
-  if (env.COMMIT_IN_MODEL) out.model = env.COMMIT_IN_MODEL;
 
   const timeoutMs = readInt(env, "COMMIT_IN_TIMEOUT_MS");
   if (timeoutMs === "invalid")
@@ -144,7 +145,6 @@ export function loadConfig(
   const warnings: string[] = [];
   const filePath = findConfigFile(cwd);
   let file: ConfigFile = {};
-  let apiKeyFromFile = false;
 
   if (filePath) {
     let raw: string;
@@ -166,16 +166,12 @@ export function loadConfig(
       );
     }
     file = result.data;
-    apiKeyFromFile = file.apiKey !== undefined;
   }
 
-  const merged: ResolvedConfig = { ...DEFAULTS, ...file, apiKeyFromFile };
+  const merged: ResolvedConfig = { ...DEFAULTS, ...file };
 
   const fromEnv = envOverrides(env, warnings);
   Object.assign(merged, fromEnv);
-
-  const apiKey = env.DEEPSEEK_API_KEY ?? merged.apiKey;
-  merged.apiKey = apiKey;
 
   return { config: merged, warnings };
 }

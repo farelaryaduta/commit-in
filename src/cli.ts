@@ -11,7 +11,6 @@ import { clackPrompts, statusPanel, type StatusView, type Colors } from "./ui";
 const TYPES = [
   "feat", "fix", "refactor", "docs", "test", "chore", "ci", "style", "perf", "build",
 ] as const;
-const PROVIDERS = ["deepseek", "fake"] as const;
 const LANGUAGES = ["auto", "en", "id"] as const;
 const COMMIT_TYPES = new Set<string>(TYPES);
 
@@ -58,13 +57,12 @@ export function createProgram(): Command {
     .option("--show-prompt", "alias for --echo")
     .option("--full", "with --echo, also print the full (untruncated) diff")
     .option("-y, --yes", "skip all prompts; pick the first suggestion")
-    .option("--offline", "skip the provider and use rule-based suggestions")
-    .option("--verbose", "print diagnostics (provider, model, latency)")
+    .option("--offline", "skip the service and use rule-based suggestions")
+    .option("--verbose", "print diagnostics (source, latency)")
     .option("-t, --type <type>", "force a conventional commit type")
     .option("-s, --scope <scope>", "force a conventional commit scope")
     .option("--count <count>", "number of suggestions to request (1-5)", "3")
-    .option("--provider <provider>", "model provider")
-    .option("--model <model>", "override the model identifier")
+    .option("--api-url <url>", "base URL of your hosted commit-in service")
     .option("--language <language>", "force suggestion language")
     .option("--body", "capture an optional body after selecting a suggestion")
     .option("--force-conventional", "force Conventional Commits style even with plain history")
@@ -93,8 +91,7 @@ export function main(argv: string[]): void {
     offline: Boolean(opts.offline),
     verbose: Boolean(opts.verbose),
     noVerify: !opts.noVerify,
-    provider: opts.provider as "deepseek" | "fake" | undefined,
-    model: opts.model as string | undefined,
+    apiUrl: opts.apiUrl as string | undefined,
     language: opts.language as RunOptions["language"],
     body: Boolean(opts.body),
     type: opts.type as RunOptions["type"],
@@ -110,16 +107,6 @@ export function main(argv: string[]): void {
   ) {
     process.stderr.write(
       `error: invalid commit type "${runOptions.type}" (expected one of: ${TYPES.join(", ")})\n`,
-    );
-    process.exitCode = EXIT_USAGE;
-    return;
-  }
-  if (
-    runOptions.provider !== undefined &&
-    !PROVIDERS.includes(runOptions.provider)
-  ) {
-    process.stderr.write(
-      `error: invalid provider "${runOptions.provider}" (expected one of: ${PROVIDERS.join(", ")})\n`,
     );
     process.exitCode = EXIT_USAGE;
     return;
