@@ -43,9 +43,11 @@ export interface RunOptions {
   yes: boolean;
   count?: number;
   provider?: "deepseek" | "fake";
+  language?: "auto" | "en" | "id";
   type?: CommitType;
   scope?: string;
   model?: string;
+  body?: boolean;
   noVerify: boolean;
   forceConventional?: boolean;
 }
@@ -92,6 +94,8 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
   if (opts.model) config.model = opts.model;
   if (opts.count !== undefined) config.count = opts.count;
   if (opts.forceConventional) config.forceConventional = true;
+  if (opts.language) config.language = opts.language;
+  if (opts.body) config.body = true;
 
   // ---- staged files  ------------------------------------------
   let staged = await getStagedFiles(root);

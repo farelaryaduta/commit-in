@@ -35,6 +35,8 @@ export function createProgram(): Command {
     .option("--count <count>", "number of suggestions to request (1-5)", "3")
     .option("--provider <provider>", "model provider", ["deepseek", "fake"])
     .option("--model <model>", "override the model identifier")
+    .option("--language <language>", "force suggestion language", ["auto", "en", "id"])
+    .option("--body", "capture an optional body after selecting a suggestion")
     .option("--force-conventional", "force Conventional Commits style even with plain history")
     .option("--no-verify", "pass --no-verify to git commit")
     .helpOption("-h, --help", "display help for command");
@@ -60,6 +62,8 @@ export function main(argv: string[]): void {
     noVerify: !opts.noVerify,
     provider: opts.provider as "deepseek" | "fake" | undefined,
     model: opts.model as string | undefined,
+    language: opts.language as RunOptions["language"],
+    body: Boolean(opts.body),
     type: opts.type as RunOptions["type"],
     scope: opts.scope as string | undefined,
     forceConventional: Boolean(opts.forceConventional),
