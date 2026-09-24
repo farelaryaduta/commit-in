@@ -3,8 +3,10 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Command } from "commander";
+import { intro, note } from "@clack/prompts";
+import pc from "picocolors";
 import { runCli, EXIT_OK, EXIT_USAGE, EXIT_ERROR, type RunOptions } from "./cli/run";
-import { clackPrompts } from "./ui";
+import { clackPrompts, statusPanel, type StatusView, type Colors } from "./ui";
 
 const TYPES = [
   "feat", "fix", "refactor", "docs", "test", "chore", "ci", "style", "perf", "build",
@@ -12,6 +14,25 @@ const TYPES = [
 const PROVIDERS = ["deepseek", "fake"] as const;
 const LANGUAGES = ["auto", "en", "id"] as const;
 const COMMIT_TYPES = new Set<string>(TYPES);
+
+const uiColors: Colors = {
+  bold: (s) => pc.bold(s),
+  dim: (s) => pc.dim(s),
+  red: (s) => pc.red(s),
+  green: (s) => pc.green(s),
+  yellow: (s) => pc.yellow(s),
+  cyan: (s) => pc.cyan(s),
+};
+
+function renderStatus(view: StatusView): void {
+  if (!process.stdout.isTTY) {
+    for (const line of statusPanel(view)) process.stdout.write(`${line}\n`);
+    return;
+  }
+  intro(pc.bold("commit-in"));
+  const lines = statusPanel(view, uiColors);
+  note(lines.join("\n"), "repository status");
+}
 
 function readVersion(): string {
   const here = dirname(fileURLToPath(import.meta.url));
@@ -120,6 +141,7 @@ export function main(argv: string[]): void {
     env: process.env,
     out: (m) => process.stdout.write(`${m}\n`),
     err: (m) => process.stderr.write(`${m}\n`),
+    render: renderStatus,
   })
     .then((code) => {
       process.exitCode = code;

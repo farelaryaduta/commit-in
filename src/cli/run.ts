@@ -17,6 +17,7 @@ import {
   stagePaths,
   getStagedDiffByFile,
   getRecentCommits,
+  getCurrentBranch,
   commit,
   type WorkingTreeFile,
 } from "../git";
@@ -31,7 +32,7 @@ import {
 } from "../providers";
 import type { LLMProvider } from "../providers";
 import { loadConfig, type ResolvedConfig } from "../config";
-import { CancelError, type Prompts } from "../ui";
+import { CancelError, statusPanel, type Prompts, type StatusView } from "../ui";
 
 export const EXIT_OK = 0;
 export const EXIT_ERROR = 1;
@@ -68,6 +69,8 @@ export interface RunDeps {
   out(msg: string): void;
   err(msg: string): void;
   providerOverride?: LLMProvider;
+  /** Renders the welcome/status dashboard. Defaults to plain text via `out`. */
+  render?(view: StatusView): void;
 }
 
 const truncate = (s: string, n: number): string =>
@@ -173,6 +176,34 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
     change.typeLocked = true;
   }
   if (opts.scope) change.scopeHint = opts.scope;
+
+  // ---- welcome dashboard (git-status style) ------------------------------
+  const workingList = await getWorkingTreeChanges(root);
+  const working = {
+    staged: workingList.filter((f) => f.staged).length,
+    unstaged: workingList.filter(
+      (f) => !f.untracked && f.status.length > 1 && f.status[1] !== " ",
+    ).length,
+    untracked: workingList.filter((f) => f.untracked).length,
+  };
+  const branch = await getCurrentBranch(root);
+  const render = deps.render ?? ((view: StatusView) => {
+    for (const line of statusPanel(view)) out(line);
+  });
+  render({
+    root,
+    branch,
+    files: change.files,
+    working,
+    typeHint: change.typeHint,
+    typeLocked: change.typeLocked,
+    scopeHint: change.scopeHint,
+    style: {
+      conventional: style.conventional,
+      language: style.language,
+      p90SubjectLength: style.p90SubjectLength,
+    },
+  });
 
   // ---- sensitive-file guard (FR-SEC-2) ----------------------------------
   const sensitive = change.files.filter((f) => f.sensitive);

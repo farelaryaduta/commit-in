@@ -10,6 +10,35 @@ and lets you pick, edit, or write your own message — then commits it for you.
 npx commit-in
 ```
 
+First run against a Laravel-style change looks like this (colors, a header, and
+a boxed panel in a real terminal):
+
+```text
+blankline
+commit-in
+blankline
+
+  ─  repository status ────────────────────────────────
+  repository: D:/work/repo
+  branch: main
+  4 staged file(s)
+    A  app/Http/Controllers/TaskController.php  controller  +80 -0
+    A  app/Models/Task.php                      source      +20 -0
+    M  routes/web.php                           route       +2  -1
+    M  composer.lock                            deps        +30 -5  ignored for AI
+  working tree: 2 staged, 1 modified (not staged), 3 untracked
+  hints: type=feat, scope=task
+  style: conventional commits, en, subject <= 72 chars
+  ──────────────────────────────────────────────────────
+
+  Choose a commit message:
+  > feat(task): add task controller and model
+    ...
+```
+
+Everything the model will see is derived from this list — files marked
+`sensitive` or `ignored for AI` contribute metadata only, never diff content.
+
 ## Features
 
 - **Repo-aware suggestions.** Detects Conventional Commits style (type/scope
@@ -27,6 +56,10 @@ npx commit-in
 - **Automatic staging.** With nothing staged, `commit-in` offers to stage all
   tracked working-tree changes (choose faster than `git add`), or pick files
   individually. `--stageddonly` forbids auto-staging.
+- **Status dashboard.** Before anything happens it shows a welcome panel with
+  your branch, staged files (status, category, numstat, `sensitive` /
+  `ignored for AI` flags), the rest of the working tree, and the detected
+  hints and repo style — so you know exactly what will be sent.
 
 ## Install
 
