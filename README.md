@@ -32,7 +32,7 @@ That's it. Works on any Git repository. No setup required.
 
 ---
 
-## ✨ What it does
+## What it does!
 
 1. **Reads your staged changes** — detects file types (controllers, models, routes, components, migrations...) with built-in presets for Laravel, Next.js, and smart rules for everything else.
 2. **Studies your commit history** — figures out your team's style. Conventional Commits? Plain sentences? English? Indonesian? Short subjects? Emoji? It adapts.
@@ -58,60 +58,13 @@ That's it. Works on any Git repository. No setup required.
 ● feat(task): add task controller and model
 ○ feat(task): implement task CRUD with controller, model, and routing
 ○ feat(task): scaffold task module with controller and eloquent model
-○ ✏️  Write my own message
-○ ⏹  Cancel
+○ Write my own message
+○ Cancel
 ```
 
 ---
 
-## 📦 Installation
-
-Requires **Node.js 20.12+** and **Git**.
-
-```bash
-# Run instantly without installing
-npx commit-in
-
-# Or install globally
-npm install -g commit-in
-
-# The `ci` shorthand is also available after global install
-ci
-```
-
----
-
-## 🚀 Quick start
-
-### 1. Basic usage (offline mode)
-
-No API key needed — commit-in can generate rule-based suggestions locally:
-
-```bash
-npx commit-in --offline
-```
-
-### 2. With AI suggestions
-
-For AI-powered suggestions, point commit-in at a service:
-
-```bash
-# Set once via environment variable
-export COMMIT_IN_API_URL=https://your-service.example.com
-
-# Or use the flag directly
-npx commit-in --api-url https://your-service.example.com
-```
-
-Or save it in `.commitinrc.json` at your project root so you don't type it again:
-
-```json
-{ "apiUrl": "https://your-service.example.com" }
-```
-
-> **Note:** No API keys live on your machine. The key lives on the service, so the person running the CLI never sees one.
-
-### 3. Commit and push in one go
+## Commit and push in one go
 
 ```bash
 npx commit-in --push
@@ -119,7 +72,7 @@ npx commit-in --push
 
 ---
 
-## 📖 Understanding Commit Types
+## Understanding Commit Types
 
 If your repository uses [Conventional Commits](https://www.conventionalcommits.org/), commit-in will automatically follow that style. Here's what each type means:
 
@@ -154,7 +107,7 @@ npx commit-in --force-conventional
 
 ---
 
-## 🛠 Commands & Flags
+## Commands & Flags
 
 ### Staging
 
@@ -168,7 +121,6 @@ npx commit-in --force-conventional
 | Flag | Description |
 |---|---|
 | `-c, --commit` | Skip the final "Commit with this message?" confirmation |
-| `-n, --dry-run` | Print the chosen message without actually committing |
 | `-p, --print` | Print suggestion subjects to stdout and exit — no prompts, pipe-friendly |
 | `--push` | Run `git push` after a successful commit |
 | `--no-verify` | Pass `--no-verify` to `git commit` (skip git hooks) |
@@ -178,7 +130,6 @@ npx commit-in --force-conventional
 | Flag | Description |
 |---|---|
 | `-y, --yes` | Skip all prompts — automatically pick the first suggestion |
-| `--offline` | Use rule-based suggestions only, no AI service needed |
 | `--count <n>` | Number of suggestions to ask for (1–5, default: 3) |
 | `-t, --type <type>` | Force a commit type (`feat`, `fix`, `refactor`, etc.) |
 | `-s, --scope <scope>` | Force a scope (e.g. `auth`, `api`, `ui`) |
@@ -210,7 +161,7 @@ npx commit-in --force-conventional
 
 ---
 
-## 🔥 Common Workflows
+## Workflows
 
 ```bash
 # Quick commit — stage everything, pick first suggestion, commit, push
@@ -245,141 +196,3 @@ npx commit-in --dry-run
 ```
 
 ---
-
-## ⚙️ Configuration
-
-commit-in reads `.commitinrc.json` from your project root. Environment variables (`COMMIT_IN_*`) override the file; CLI flags override everything.
-
-```jsonc
-{
-  // Service URL for AI suggestions
-  // "apiUrl": "https://your-service.example.com",
-
-  // Shared secret for authenticated services
-  // "apiToken": "your-token",
-
-  // Number of suggestions (1-5)
-  // "count": 3,
-
-  // How many recent commits to analyze for style
-  // "historyDepth": 50,
-
-  // Max diff size sent to the model (in characters)
-  // "maxDiffChars": 12000,
-
-  // Suggestion language: "auto", "en", or "id"
-  // "language": "auto",
-
-  // Prompt for a commit body after picking a subject
-  // "body": false,
-
-  // Request timeout in milliseconds
-  // "timeoutMs": 30000,
-
-  // Max retries on failure (0-3)
-  // "maxRetries": 2,
-
-  // AI temperature (0-2, higher = more creative)
-  // "temperature": 0.7,
-
-  // Max subject line length
-  // "maxSubjectLength": 72,
-
-  // Extra file patterns to ignore (never sent to AI)
-  // "ignore": [],
-
-  // Force Conventional Commits even with plain history
-  // "forceConventional": false
-}
-```
-
-### Environment Variables
-
-Every config key has a `COMMIT_IN_` environment variable equivalent:
-
-| Variable | Example |
-|---|---|
-| `COMMIT_IN_API_URL` | `https://your-service.example.com` |
-| `COMMIT_IN_API_TOKEN` | `your-shared-secret` |
-| `COMMIT_IN_COUNT` | `5` |
-| `COMMIT_IN_LANGUAGE` | `en` |
-| `COMMIT_IN_HISTORY_DEPTH` | `50` |
-| `COMMIT_IN_MAX_DIFF_CHARS` | `12000` |
-| `COMMIT_IN_BODY` | `true` |
-| `COMMIT_IN_TIMEOUT_MS` | `30000` |
-| `COMMIT_IN_MAX_RETRIES` | `2` |
-| `COMMIT_IN_TEMPERATURE` | `0.7` |
-| `COMMIT_IN_MAX_SUBJECT_LENGTH` | `72` |
-| `COMMIT_IN_IGNORE` | `*.generated.ts,dist/**` |
-| `COMMIT_IN_FORCE_CONVENTIONAL` | `true` |
-
----
-
-## 🔒 Safety & Privacy
-
-commit-in takes your code privacy seriously:
-
-- **Sensitive files are never sent.** Files like `.env`, private keys (`.pem`, `.key`), credentials, and service accounts are flagged. Their content never leaves your machine.
-- **Lockfiles, build output, and binaries stay local.** Only meaningful source diffs are included.
-- **Redaction pass.** Before anything is sent, a redaction pass strips key-value blocks and obvious secret patterns from the diff.
-- **Custom ignore rules.** Add more patterns to the `ignore` config to exclude specific files.
-
-If a sensitive file is staged, commit-in will warn you and let you decide whether to continue (with its content excluded) or abort entirely.
-
-### Exit Codes
-
-| Code | Meaning |
-|---|---|
-| `0` | Success (committed or dry-run) |
-| `1` | Something went wrong |
-| `2` | Bad usage (not a repo, bad config, no service URL) |
-| `3` | Sensitive files were staged and you chose to abort |
-| `130` | Cancelled by user |
-
----
-
-## 🌐 Self-hosting the AI Service
-
-commit-in ships with a reference server in `server/` that proxies requests to [Groq](https://groq.com). It's one file, zero dependencies:
-
-```bash
-GROQ_API_KEY=gsk_... node server/server.mjs
-```
-
-Then point your CLI at it:
-
-```bash
-export COMMIT_IN_API_URL=http://localhost:8787
-npx commit-in
-```
-
-The server supports these environment variables:
-
-| Variable | Default | Description |
-|---|---|---|
-| `GROQ_API_KEY` | *(required)* | Your Groq API key |
-| `GROQ_MODEL` | `llama-3.3-70b-versatile` | Model to use for suggestions |
-| `COMMIT_IN_API_TOKEN` | *(unset)* | Optional shared secret for authentication |
-| `PORT` | `8787` | HTTP port |
-
-Full API documentation in [`server/README.md`](server/README.md).
-
----
-
-## 🤝 Contributing
-
-```bash
-git clone https://github.com/farelaryaduta/commit-in.git
-cd commit-in
-npm install
-npm run dev -- --help      # run from source
-npm test                   # 163 tests
-npm run typecheck          # type checking
-npm run build              # bundle to dist/cli.mjs
-```
-
----
-
-## 📄 License
-
-MIT
