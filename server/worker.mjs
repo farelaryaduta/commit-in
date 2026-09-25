@@ -1,7 +1,7 @@
 /**
- * commitin service for Cloudflare Workers (Groq backend).
+ * commitnow service for Cloudflare Workers (Groq backend).
  *
- * Turns the prompt assembled by the commitin CLI into commit-message
+ * Turns the prompt assembled by the commitnow CLI into commit-message
  * suggestions using Groq. End users never need an API key — the Workers
  * deployment does.
  *

@@ -78,7 +78,7 @@ const truncate = (s: string, n: number): string =>
   s.length > n ? `${s.slice(0, n - 1)}…` : s;
 
 /**
- * Run the full commitin flow. Returns a process exit code.
+ * Run the full commitnow flow. Returns a process exit code.
  */
 export async function runCli(opts: RunOptions, deps: RunDeps): Promise<number> {
   const { err } = deps;
@@ -420,8 +420,8 @@ function reportProviderError(err: (msg: string) => void, e: unknown): void {
       rate_limit:
         "The service is rate limited. Try again in a moment, or commit in smaller batches.",
       timeout: "The request timed out. Try again in a moment.",
-      network: "Network error talking to the commitin service. Check your connection.",
-      http: "The commitin service returned an error status.",
+      network: "Network error talking to the commitnow service. Check your connection.",
+      http: "The commitnow service returned an error status.",
       empty: "The service returned an empty completion; try again.",
       parse: "The service returned malformed data.",
     };

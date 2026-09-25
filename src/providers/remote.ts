@@ -11,7 +11,7 @@ export const DEFAULT_API_URL = "https://commit-in.farelminecraft450.workers.dev"
 const RETRIABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
 
 export interface RemoteProviderOptions {
-  /** Base URL of the commitin service, e.g. https://ci.example.com. */
+  /** Base URL of the commitnow service, e.g. https://ci.example.com. */
   apiUrl: string;
   /** Optional bearer token required by the service. */
   apiToken?: string;
@@ -48,7 +48,7 @@ export type FetchLike = (
   init: RequestInit,
 ) => Promise<Response>;
 
-/** Transport that asks a hosted commitin service for suggestions. */
+/** Transport that asks a hosted commitnow service for suggestions. */
 export class RemoteProvider implements LLMProvider {
   readonly name = "remote";
 
@@ -93,7 +93,7 @@ export class RemoteProvider implements LLMProvider {
         if (req.signal?.aborted) throw err;
         if (!isTimeoutError(err) && !isTransientNetworkError(err)) {
           throw new ProviderError(
-            `commitin service request failed: ${(err as Error).message}`,
+            `commitnow service request failed: ${(err as Error).message}`,
             { code: "network", retriable: false },
           );
         }
@@ -104,8 +104,8 @@ export class RemoteProvider implements LLMProvider {
         }
         throw new ProviderError(
           isTimeoutError(err)
-            ? `commitin service request timed out after ${timeoutMs}ms`
-            : `commitin service request failed: ${(err as Error).message}`,
+            ? `commitnow service request timed out after ${timeoutMs}ms`
+            : `commitnow service request failed: ${(err as Error).message}`,
           {
             code: isTimeoutError(err) ? "timeout" : "network",
             retriable: false,
@@ -115,7 +115,7 @@ export class RemoteProvider implements LLMProvider {
 
       if (res.status === 401 || res.status === 403) {
         throw new ProviderError(
-          "commitin service rejected the request (check COMMIT_IN_API_TOKEN)",
+          "commitnow service rejected the request (check COMMIT_IN_API_TOKEN)",
           { code: "auth", retriable: false, status: res.status },
         );
       }
@@ -137,7 +137,7 @@ export class RemoteProvider implements LLMProvider {
           continue;
         }
         throw new ProviderError(
-          `commitin service error ${res.status}: ${detail.slice(0, 300)}`,
+          `commitnow service error ${res.status}: ${detail.slice(0, 300)}`,
           { code: is429 ? "rate_limit" : "http", retriable: !is429, status: res.status },
         );
       }
@@ -146,13 +146,13 @@ export class RemoteProvider implements LLMProvider {
       try {
         data = await res.json();
       } catch {
-        throw new ProviderError("commitin service returned malformed JSON", {
+        throw new ProviderError("commitnow service returned malformed JSON", {
           code: "parse",
         });
       }
       const content = (data as any)?.text as string | undefined;
       if (typeof content !== "string" || content.trim() === "") {
-        throw new ProviderError("commitin service returned an empty completion", {
+        throw new ProviderError("commitnow service returned an empty completion", {
           code: "empty",
         });
       }

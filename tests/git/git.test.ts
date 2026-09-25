@@ -39,7 +39,7 @@ describe("repo detection", () => {
   });
 
   it("isGitRepo returns false outside a repository", async () => {
-    const outside = mkdtempSync(join(tmpdir(), "commitin-outside-"));
+    const outside = mkdtempSync(join(tmpdir(), "commitnow-outside-"));
     try {
       expect(await isGitRepo(outside)).toBe(false);
     } finally {

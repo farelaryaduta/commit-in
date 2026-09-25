@@ -8,11 +8,11 @@ import {
   type ResolvedConfig,
 } from "./schema";
 
-export const CONFIG_FILENAMES = [".commitinrc.json", "commitinrc.json"] as const;
+export const CONFIG_FILENAMES = [".commitnowrc.json", "commitnowrc.json"] as const;
 
 export class ConfigError extends Error {}
 
-/** Resolve `.commitinrc.json` in `cwd` (no upward search), if present. */
+/** Resolve `.commitnowrc.json` in `cwd` (no upward search), if present. */
 export function findConfigFile(cwd: string): string | undefined {
   for (const name of CONFIG_FILENAMES) {
     const p = join(cwd, name);
@@ -135,7 +135,7 @@ export interface LoadResult {
 }
 
 /**
- * Load and merge config from defaults + `.commitinrc.json` + environment.
+ * Load and merge config from defaults + `.commitnowrc.json` + environment.
  * Throws ConfigError on an unreadable or schema-invalid config file.
  */
 export function loadConfig(
