@@ -29,7 +29,7 @@ Optional variables (dashboard → Settings → Variables, or `wrangler secret`):
 | Variable | Required | Default | Meaning |
 | --- | --- | --- | --- |
 | `GROQ_API_KEY` | yes | — | Groq API key |
-| `GROQ_MODEL` | no | `openai/gpt-oss-20b` | Model to ask for suggestions |
+| `GROQ_MODEL` | no | `qwen/qwen3.8-27b` | Model to ask for suggestions |
 | `COMMIT_IN_API_TOKEN` | no | _(unset)_ | Shared secret; when set, the CLI must call with `Authorization: Bearer <token>` |
 
 You'll get a URL like `https://commit-in.<subdomain>.workers.dev`. Test it:

@@ -8,7 +8,7 @@
  *
  * ENV:
  *   GROQ_API_KEY            required
- *   GROQ_MODEL              default "openai/gpt-oss-20b"
+ *   GROQ_MODEL              default "qwen/qwen3.8-27b"
  *   COMMIT_IN_API_TOKEN     optional shared secret; when set, the CLI must
  *                           send it as `Authorization: Bearer <token>`
  *   PORT                    default 8787
@@ -20,7 +20,7 @@ import { createServer } from "node:http";
 const GROQ_BASE = "https://api.groq.com/openai/v1/chat/completions";
 const PORT = Number(process.env.PORT || 8787);
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
+const GROQ_MODEL = process.env.GROQ_MODEL || "qwen/qwen3.8-27b";
 const SERVICE_TOKEN = process.env.COMMIT_IN_API_TOKEN || "";
 
 if (!GROQ_API_KEY) {
@@ -28,11 +28,12 @@ if (!GROQ_API_KEY) {
   process.exit(1);
 }
 
-function send(res, status, body) {
+function send(res, status, body, headers = {}) {
   const data = JSON.stringify(body);
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
     "content-length": Buffer.byteLength(data),
+    ...headers,
   });
   res.end(data);
 }
@@ -64,6 +65,13 @@ async function callGroq(messages, temperature, maxTokens) {
     signal: AbortSignal.timeout(30_000),
   });
 
+  if (res.status === 429) {
+    const retryAfter = parseFloat(res.headers.get("retry-after") ?? "");
+    throw Object.assign(new Error("Groq rate limit exceeded"), {
+      status: 429,
+      retryAfter: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 1,
+    });
+  }
   if (res.status === 401 || res.status === 403) {
     throw Object.assign(new Error("GROQ_API_KEY was rejected"), { status: 502 });
   }
@@ -145,7 +153,11 @@ const server = createServer(async (req, res) => {
     send(res, 200, { text });
   } catch (err) {
     const status = err?.status ?? 500;
-    send(res, status, { error: String(err?.message || err) });
+    const headers =
+      err?.retryAfter !== undefined
+        ? { "retry-after": String(err.retryAfter) }
+        : {};
+    send(res, status, { error: String(err?.message || err) }, headers);
   }
 });
 

@@ -26,6 +26,37 @@ function dedupe(list: Suggestion[]): Suggestion[] {
   });
 }
 
+const SLOP_TOKENS = new Set([
+  "stuff", "things", "files", "code", "deps", "dependencies", "dependency",
+  "docs", "doc", "everything", "anything", "something", "various", "misc",
+  "miscellaneous", "general", "bugs", "bug", "issues", "issue", "fixes", "fix",
+  "changes", "change", "updates", "update", "work", "progress", "cleanup",
+  "polish", "tweaks", "tweak", "improvements", "improvement", "housekeeping",
+  "maintenance", "refactor", "refactoring", "add", "remove", "make", "do",
+]);
+
+/**
+ * Detect a "slop" subject: one so generic it names nothing concrete
+ * ("fix bugs", "chore: update deps", "misc changes"). These are the kind
+ * of suggestions an LLM falls back to when it isn't reading the diff.
+ */
+export function isSlop(subject: string): boolean {
+  const s = subject.trim().toLowerCase();
+  if (s === "") return true;
+  const core = s.replace(/^[a-z][\w-]*(?:\([^)]*\))?!?\s*:\s*/, "").trim();
+  if (core === "") return true;
+
+  if (/^(?:wip|work in progress|initial commit|first commit|draft|in progress|no idea|lol)$/.test(core)) {
+    return true;
+  }
+
+  const tokens = core.split(/[^a-z0-9]+/).filter(Boolean);
+  const namesConcreteUnit = tokens.some(
+    (t) => t.length >= 5 && !SLOP_TOKENS.has(t),
+  );
+  return !namesConcreteUnit;
+}
+
 /** Ensure each subject matches the repo's Conventional Commits style. */
 function enforceConventional(
   list: Suggestion[],

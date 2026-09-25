@@ -43,6 +43,17 @@ describe("RemoteProvider", () => {
     });
   });
 
+  it("fails fast (no retries) on connection refused", async () => {
+    const fetcher = vi.fn(async () => {
+      const err = new TypeError("fetch failed") as Error & { cause: { code: string } };
+      err.cause = { code: "ECONNREFUSED" };
+      throw err;
+    });
+    const p = new RemoteProvider({ apiUrl: API_URL, maxRetries: 2 }, fetcher);
+    await expect(p.generate(REQ)).rejects.toMatchObject({ code: "network" });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
   it("sends the service token as a bearer header when configured", async () => {
     let auth: string | undefined;
     const fetcher = async (_url: string, init: RequestInit) => {
@@ -120,6 +131,38 @@ describe("RemoteProvider", () => {
     const fetcher = async () => jsonReply({ text: "" });
     const p = new RemoteProvider({ apiUrl: API_URL }, fetcher);
     await expect(p.generate(REQ)).rejects.toMatchObject({ code: "empty" });
+  });
+
+  it("honors retry-after before retrying a rate-limited request", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: "rate limit" }), {
+          status: 429,
+          headers: { "retry-after": "0.001" },
+        }),
+      )
+      .mockResolvedValueOnce(jsonReply({ text: "fix: ok" }));
+    const p = new RemoteProvider(
+      { apiUrl: API_URL, maxRetries: 1, timeoutMs: 5000 },
+      fetcher,
+    );
+    const out = await p.generate(REQ);
+    expect(out).toBe("fix: ok");
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports a ProviderError with code rate_limit after retries", async () => {
+    const fetcher = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ error: "rate limit" }), {
+          status: 429,
+          headers: { "retry-after": "0.001" },
+        }),
+    );
+    const p = new RemoteProvider({ apiUrl: API_URL, timeoutMs: 5000 }, fetcher);
+    await expect(p.generate(REQ)).rejects.toMatchObject({ code: "rate_limit" });
+    expect(fetcher).toHaveBeenCalledTimes(4);
   });
 
   it("exposes sane defaults", () => {

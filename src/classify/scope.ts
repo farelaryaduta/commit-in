@@ -129,7 +129,22 @@ export function pickScope(
       tie = true;
     }
   }
-  return tie ? undefined : best;
+  if (tie) {
+    const tied = [...counts.entries()].filter(([, c]) => c === bestCount);
+    const byLength = [...tied.map(([v]) => v)].sort((a, b) => a.length - b.length);
+    const shortest = byLength[0];
+    const narrower = byLength.slice(1);
+    // A tie where one candidate is a prefix of all others ("cart" vs
+    // "cartItem") has a broader scope — prefer the shorter one.
+    if (
+      shortest !== undefined &&
+      narrower.every((v) => v.startsWith(shortest!))
+    ) {
+      return shortest;
+    }
+    return undefined;
+  }
+  return best;
 }
 
 /** Prefer a known scope spelling that matches or contains the candidate. */

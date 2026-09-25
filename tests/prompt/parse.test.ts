@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSuggestions, NO_SUGGESTIONS } from "../../src/prompt/parse";
+import { parseSuggestions, isSlop, NO_SUGGESTIONS } from "../../src/prompt/parse";
 import type { StyleProfile } from "../../src/types";
 
 const CONV: StyleProfile = {
@@ -98,5 +98,23 @@ describe("parseSuggestions", () => {
       null,
     ]);
     expect(parseSuggestions(raw)).toEqual([{ subject: "feat: ok" }]);
+  });
+});
+
+describe("isSlop", () => {
+  it("flags empty and vagueness-only subjects", () => {
+    expect(isSlop("")).toBe(true);
+    expect(isSlop("fix bugs")).toBe(true);
+    expect(isSlop("chore: update deps")).toBe(true);
+    expect(isSlop("misc changes")).toBe(true);
+    expect(isSlop("wip")).toBe(true);
+    expect(isSlop("feat: add stuff")).toBe(true);
+  });
+
+  it("accepts subjects that name a concrete unit", () => {
+    expect(isSlop("feat(cart): add coupon model")).toBe(false);
+    expect(isSlop("fix: guard null in checkout")).toBe(false);
+    expect(isSlop("fix: add login controller")).toBe(false);
+    expect(isSlop("docs: update readme")).toBe(false);
   });
 });

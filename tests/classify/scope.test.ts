@@ -54,8 +54,13 @@ describe("pickScope", () => {
     ).toBe("task");
   });
 
-  it("returns undefined on a tie", () => {
-    expect(pickScope(["task", "tasks", "task", "tasks"])).toBeUndefined();
+  it("resolves a prefix tie to the broader scope", () => {
+    expect(pickScope(["task", "tasks", "task", "tasks"])).toBe("task");
+    expect(pickScope(["cart", "cartitem", "cart", "cartitem"])).toBe("cart");
+  });
+
+  it("returns undefined when a tie has no common prefix", () => {
+    expect(pickScope(["auth", "billing", "auth", "billing"])).toBeUndefined();
   });
 
   it("returns undefined when there are no candidates", () => {

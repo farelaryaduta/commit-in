@@ -45,14 +45,14 @@ describe("fallbackSuggestions", () => {
   it("docs-only changes produce a docs message", async () => {
     const summary = await classify([file("README.md")]);
     const out = fallbackSuggestions(summary, CONVENTIONAL);
-    expect(out[0]?.subject).toBe("docs: update documentation");
+    expect(out[0]?.subject).toBe("docs: update readme");
     expect(out).toHaveLength(1);
   });
 
-  it("test-only changes produce a test message", async () => {
+  it("test-only changes name the tested unit", async () => {
     const summary = await classify([file("tests/Feature/TaskTest.php", "M")]);
     const out = fallbackSuggestions(summary, CONVENTIONAL);
-    expect(out[0]?.subject).toMatch(/^test(: add tests|\(\w+\): add tests)$/);
+    expect(out[0]?.subject).toBe("test: add task tests");
   });
 
   it("deps-only changes produce chore(deps)", async () => {
@@ -61,32 +61,32 @@ describe("fallbackSuggestions", () => {
     expect(out[0]?.subject).toBe("chore(deps): update dependencies");
   });
 
-  it("new source files produce feat with joined categories", async () => {
+  it("new source files produce a scoped feat naming the added units", async () => {
     const summary = await classify(laravelFeature, ["laravel"]);
     const out = fallbackSuggestions(summary, CONVENTIONAL);
     const first = out[0]?.subject ?? "";
-    expect(first).toMatch(/^feat\(task\): add /);
+    expect(first).toMatch(/^feat\(task\): add task controller and task model$/);
     expect(first).toContain("controller");
-    expect(first).toContain("migration");
+    expect(first).toContain("model");
   });
 
   it("honors a locked type hint", async () => {
     const summary = await classify([file("docs/notes.md", "M")]);
     const out = fallbackSuggestions(summary, CONVENTIONAL);
-    expect(out[0]?.subject).toBe("docs: update documentation");
+    expect(out[0]?.subject).toBe("docs: update notes");
     void summary;
   });
 
-  it("generic fallback uses the top-level directory", async () => {
+  it("names the unit instead of the top-level directory", async () => {
     const summary = await classify([file("app/Http/Controllers/TaskController.php", "M")]);
     const out = fallbackSuggestions(summary, CONVENTIONAL);
-    expect(out[0]?.subject).toBe("chore: update app");
+    expect(out[0]?.subject).toBe("chore: update task");
   });
 
   it("formats for non-conventional lowercase style", async () => {
     const summary = await classify([file("README.md")]);
     const out = fallbackSuggestions(summary, PLAIN);
-    expect(out[0]?.subject).toBe("Update documentation");
+    expect(out[0]?.subject).toBe("Update readme");
   });
 
   it("formats for non-conventional lowercase-start style", async () => {
@@ -95,13 +95,22 @@ describe("fallbackSuggestions", () => {
       summary,
       { ...PLAIN, lowercaseStart: true },
     );
-    expect(out[0]?.subject).toBe("update documentation");
+    expect(out[0]?.subject).toBe("update readme");
   });
 
   it("dedupes repeated categories", async () => {
     const migration = laravelMigrationOnly.map((f) => f);
     const summary = await classify(migration, ["laravel"]);
     const out = fallbackSuggestions(summary, CONVENTIONAL);
-    expect(out[0]?.subject).toMatch(/^feat\(\w+\): add migration$/);
+    expect(out[0]?.subject).toMatch(/^feat\(tasks\): add tasks migration$/);
+  });
+
+  it("removals produce a chore that says remove", async () => {
+    const summary = await classify([
+      file("app/Http/Controllers/OldController.php", "D"),
+      file("app/Models/Old.php", "D"),
+    ]);
+    const out = fallbackSuggestions(summary, CONVENTIONAL);
+    expect(out[0]?.subject).toBe("chore: remove old");
   });
 });

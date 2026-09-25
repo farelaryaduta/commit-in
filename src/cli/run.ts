@@ -22,7 +22,7 @@ import {
   type WorkingTreeFile,
 } from "../git";
 import { run } from "../git/run";
-import { buildPrompt, parseSuggestions } from "../prompt";
+import { buildPrompt, isSlop, parseSuggestions } from "../prompt";
 import {
   DEFAULT_API_URL,
   ProviderError,
@@ -32,6 +32,7 @@ import {
 import type { LLMProvider } from "../providers";
 import { loadConfig, type ResolvedConfig } from "../config";
 import { CancelError, statusPanel, type Prompts, type StatusView } from "../ui";
+import pc from "picocolors";
 
 export const EXIT_OK = 0;
 export const EXIT_ERROR = 1;
@@ -50,6 +51,7 @@ export interface RunOptions {
   yes: boolean;
   offline: boolean;
   verbose: boolean;
+  print: boolean;
   count?: number;
   apiUrl?: string;
   language?: "auto" | "en" | "id";
@@ -187,20 +189,22 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
   const render = deps.render ?? ((view: StatusView) => {
     for (const line of statusPanel(view)) out(line);
   });
-  render({
-    root,
-    branch,
-    files: change.files,
-    working,
-    typeHint: change.typeHint,
-    typeLocked: change.typeLocked,
-    scopeHint: change.scopeHint,
-    style: {
-      conventional: style.conventional,
-      language: style.language,
-      p90SubjectLength: style.p90SubjectLength,
-    },
-  });
+  if (!opts.print) {
+    render({
+      root,
+      branch,
+      files: change.files,
+      working,
+      typeHint: change.typeHint,
+      typeLocked: change.typeLocked,
+      scopeHint: change.scopeHint,
+      style: {
+        conventional: style.conventional,
+        language: style.language,
+        p90SubjectLength: style.p90SubjectLength,
+      },
+    });
+  }
 
   // ---- sensitive-file guard (FR-SEC-2) ----------------------------------
   const sensitive = change.files.filter((f) => f.sensitive);
@@ -211,7 +215,7 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
       return EXIT_SENSITIVE;
     }
     const contin = await prompts.confirm({
-      message: `⚠  ${names} looks sensitive. Skip its content and continue?`,
+      message: `${names} looks sensitive — skip its content and continue?`,
       initialValue: false,
     });
     if (!contin) return EXIT_SENSITIVE;
@@ -289,6 +293,32 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
     suggestions = parseSuggestions(raw, style, change.typeHint, config.count);
   }
 
+  // ---- slop retry (one nudge, then keep whatever the model gives us) --------
+  const vague = suggestions.filter((s) => isSlop(s.subject)).length;
+  if (!opts.offline && suggestions.length > 0 && vague >= Math.ceil(suggestions.length / 2)) {
+    const nudge =
+      "\n\nSome previous subjects were too vague and did not name anything that changed (e.g. \"fix bugs\"). " +
+      `Name the concrete unit in EVERY subject — the thing that was built, fixed, or moved — ` +
+      `e.g. "feat(cart): add coupon model". Keep subjects under ${config.maxSubjectLength} chars, ` +
+      "lowercase after the colon, no trailing period.";
+    try {
+      const raw2 = await provider!.generate({ ...request, user: request.user + nudge });
+      suggestions = parseSuggestions(raw2, style, change.typeHint, config.count);
+    } catch {
+      // keep the first (vague) attempt; provider is busy flaking out
+    }
+  }
+
+  // ---- print mode: subjects to stdout, no prompts ---------------------------
+  if (opts.print) {
+    if (suggestions.length === 0) {
+      err("no usable suggestions from the AI service");
+      return EXIT_ERROR;
+    }
+    for (const s of suggestions) out(s.subject);
+    return EXIT_OK;
+  }
+
   if (suggestions.length === 0) {
     const manual = await prompts.text({
       message: "No usable suggestions. Paste a commit subject (or Enter to abort)",
@@ -307,11 +337,11 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
       options: [
         ...suggestions.map((s, i) => ({
           value: `s${i}`,
-          label: truncate(s.subject, 72),
+          label: colorizeType(truncate(s.subject, 72)),
           hint: s.body ? truncate(s.body.split("\n")[0]!, 40) : undefined,
         })),
-        { value: "custom", label: "✏️  Write my own message" },
-        { value: "cancel", label: "⏹  Cancel" },
+        { value: "custom", label: "Write my own message", hint: "type a subject yourself" },
+        { value: "cancel", label: "Cancel", hint: "abort" },
       ],
     });
     if (value === "cancel") return EXIT_CANCEL;
@@ -355,7 +385,7 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
   }
 
   const hash = await commit(root, message, opts.noVerify);
-  out(`✓ committed ${hash} — ${chosen.subject}`);
+  out(`[${branch ?? "HEAD"} ${hash.slice(0, 7)}] ${colorizeType(chosen.subject)}`);
 
   if (opts.push) {
     const res = await run(root, ["push"]);
@@ -363,7 +393,7 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
       err(`git push failed: ${res.stderr.trim() || res.stdout.trim()}`);
       return EXIT_ERROR;
     }
-    out("✓ pushed");
+    out("pushed");
   }
 
   return EXIT_OK;
@@ -386,6 +416,8 @@ function reportProviderError(err: (msg: string) => void, e: unknown): void {
   if (e instanceof ProviderError) {
     const hints: Record<string, string> = {
       auth: "The service rejected the request. Check COMMIT_IN_API_TOKEN.",
+      rate_limit:
+        "The service is rate limited. Try again in a moment, or commit in smaller batches.",
       timeout: "The request timed out. Try again in a moment.",
       network: "Network error talking to the commit-in service. Check your connection.",
       http: "The commit-in service returned an error status.",
@@ -398,4 +430,24 @@ function reportProviderError(err: (msg: string) => void, e: unknown): void {
     return;
   }
   err(`error: ${(e as Error).message}`);
+}
+
+const TYPE_COLORS: Record<string, (s: string) => string> = {
+  feat: pc.green,
+  fix: pc.red,
+  refactor: pc.yellow,
+  perf: pc.yellow,
+  docs: pc.blue,
+  test: pc.magenta,
+  style: pc.cyan,
+  ci: pc.cyan,
+  build: pc.cyan,
+  chore: pc.dim,
+};
+
+/** Colorize a conventional subject by its type prefix (select list only). */
+function colorizeType(subject: string): string {
+  const m = /^([\w-]+)/.exec(subject);
+  const color = m ? TYPE_COLORS[m[1]!] : undefined;
+  return color ? color(subject) : subject;
 }

@@ -26,6 +26,23 @@ function isTimeoutError(err: unknown): boolean {
   return false;
 }
 
+/** Network failures worth retrying (transient) — DNS/refused errors are not. */
+function isTransientNetworkError(err: unknown): boolean {
+  if (err instanceof Error && (err as { cause?: unknown }).cause) {
+    const code = ((err as { cause?: { code?: string } }).cause!)?.code;
+    return [
+      "ECONNRESET",
+      "ETIMEDOUT",
+      "EAI_AGAIN",
+      "ENETDOWN",
+      "ENETUNREACH",
+      "EHOSTUNREACH",
+      "EPIPE",
+    ].includes(code ?? "");
+  }
+  return false;
+}
+
 export type FetchLike = (
   url: string,
   init: RequestInit,
@@ -74,6 +91,12 @@ export class RemoteProvider implements LLMProvider {
         });
       } catch (err) {
         if (req.signal?.aborted) throw err;
+        if (!isTimeoutError(err) && !isTransientNetworkError(err)) {
+          throw new ProviderError(
+            `commit-in service request failed: ${(err as Error).message}`,
+            { code: "network", retriable: false },
+          );
+        }
         if (attempt < maxRetries) {
           await sleep(RETRY_BACKOFF_MS[attempt] ?? 1500);
           attempt += 1;
@@ -99,14 +122,23 @@ export class RemoteProvider implements LLMProvider {
 
       if (!res.ok) {
         const detail = await res.text().catch(() => "");
-        if (RETRIABLE_STATUS.has(res.status) && attempt < maxRetries) {
-          await sleep(RETRY_BACKOFF_MS[attempt] ?? 1500);
+        let waitMs: number = RETRY_BACKOFF_MS[attempt] ?? 1500;
+        const retryAfter = parseFloat(res.headers.get("retry-after") ?? "");
+        if (Number.isFinite(retryAfter) && retryAfter > 0) {
+          waitMs = Math.min(retryAfter * 1000, 15_000);
+        }
+        const is429 = res.status === 429;
+        const canRetry = is429
+          ? attempt < Math.max(maxRetries, 3)
+          : RETRIABLE_STATUS.has(res.status) && attempt < maxRetries;
+        if (canRetry) {
+          await sleep(waitMs);
           attempt += 1;
           continue;
         }
         throw new ProviderError(
           `commit-in service error ${res.status}: ${detail.slice(0, 300)}`,
-          { code: "http", retriable: false, status: res.status },
+          { code: is429 ? "rate_limit" : "http", retriable: !is429, status: res.status },
         );
       }
 

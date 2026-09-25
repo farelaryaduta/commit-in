@@ -28,7 +28,7 @@ function renderStatus(view: StatusView): void {
     for (const line of statusPanel(view)) process.stdout.write(`${line}\n`);
     return;
   }
-  intro(pc.bold("commit-in"));
+  intro(`${pc.bold("commit-in")} ${pc.dim(`v${readVersion()}`)}`);
   const lines = statusPanel(view, uiColors);
   note(lines.join("\n"), "repository status");
 }
@@ -52,6 +52,7 @@ export function createProgram(): Command {
     .option("-a, --all", "stage all tracked working-tree changes first (git add -u)")
     .option("-c, --commit", "skip the final confirmation and run git commit")
     .option("-n, --dry-run", "print the chosen message without committing")
+    .option("-p, --print", "print suggestion subjects to stdout and exit (no prompts)")
     .option("--push", "run git push after a successful commit")
     .option("-e, --echo", "print the model prompt and exit without calling the model")
     .option("--show-prompt", "alias for --echo")
@@ -90,6 +91,7 @@ export function main(argv: string[]): void {
     yes: Boolean(opts.yes),
     offline: Boolean(opts.offline),
     verbose: Boolean(opts.verbose),
+    print: Boolean(opts.print),
     noVerify: !opts.noVerify,
     apiUrl: opts.apiUrl as string | undefined,
     language: opts.language as RunOptions["language"],

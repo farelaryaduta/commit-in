@@ -18,6 +18,7 @@ function baseOptions(partial: Partial<RunOptions> = {}): RunOptions {
     yes: true,
     offline: false,
     verbose: false,
+    print: false,
     noVerify: false,
     ...partial,
   };
@@ -301,6 +302,60 @@ describe("runCli", () => {
       expect(code).toBe(EXIT_OK);
       expect(out.join("\n")).toContain("docs: update documentation");
       expect(await logSubjects(repo)).toHaveLength(1);
+    } finally {
+      repo.cleanup();
+    }
+  });
+
+  it("--print writes subjects to stdout without prompting", async () => {
+    const repo = await TempRepo.init();
+    try {
+      repo.writeFile("src/order.ts", "hi\n");
+      await repo.addAll();
+      await repo.commit("feat: initial");
+      repo.writeFile("src/order.ts", "hi\nchanged\n");
+      await repo.addAll();
+      const out: string[] = [];
+      const deps = await depsFor(repo, new ScriptedPrompts(), {
+        out: (m) => out.push(m),
+      });
+      const code = await runCli(baseOptions({ print: true, commit: false }), deps);
+      expect(code).toBe(EXIT_OK);
+      expect(out).toEqual(["feat(api): add login endpoint"]);
+    } finally {
+      repo.cleanup();
+    }
+  });
+
+  it("retries once with a nudge when every suggestion is vague", async () => {
+    const repo = await TempRepo.init();
+    try {
+      repo.writeFile("src/order.ts", "hi\n");
+      await repo.addAll();
+      await repo.commit("feat: initial");
+      repo.writeFile("src/order.ts", "hi\nchanged\n");
+      await repo.addAll();
+      const out: string[] = [];
+      let calls = 0;
+      const deps = await depsFor(repo, new ScriptedPrompts(), {
+        out: (m) => out.push(m),
+        providerOverride: {
+          name: "stub",
+          generate: async () => {
+            calls += 1;
+            return calls === 1
+              ? "1. fix bugs\n2. chore: update deps"
+              : "1. feat(api): add login controller";
+          },
+        },
+      });
+      const code = await runCli(
+        baseOptions({ dryRun: true, commit: false }),
+        deps,
+      );
+      expect(code).toBe(EXIT_OK);
+      expect(calls).toBe(2);
+      expect(out.join("\n")).toContain("feat(api): add login controller");
     } finally {
       repo.cleanup();
     }
