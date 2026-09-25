@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
+import { realpathSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Command } from "commander";
@@ -62,7 +62,7 @@ export function createProgram(): Command {
     .option("-t, --type <type>", "force a conventional commit type")
     .option("-s, --scope <scope>", "force a conventional commit scope")
     .option("--count <count>", "number of suggestions to request (1-5)", "3")
-    .option("--api-url <url>", "base URL of your hosted commit-in service")
+    .option("--api-url <url>", "override the default commit-in service URL")
     .option("--language <language>", "force suggestion language")
     .option("--body", "capture an optional body after selecting a suggestion")
     .option("--force-conventional", "force Conventional Commits style even with plain history")
@@ -139,9 +139,12 @@ export function main(argv: string[]): void {
     });
 }
 
+// Resolve junctions/symlinks (Windows global installs use junctions) so the
+// entry check still matches after Node realpaths the module URL.
+const entry = process.argv[1];
 const isDirectRun =
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href;
+  entry !== undefined &&
+  import.meta.url === pathToFileURL(realpathSync(entry)).href;
 
 if (isDirectRun) {
   main(process.argv);

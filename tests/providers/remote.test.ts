@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   RemoteProvider,
+  DEFAULT_API_URL,
   DEFAULT_MAX_RETRIES,
   DEFAULT_TIMEOUT_MS,
 } from "../../src/providers";
@@ -124,6 +125,7 @@ describe("RemoteProvider", () => {
   it("exposes sane defaults", () => {
     expect(DEFAULT_TIMEOUT_MS).toBe(30_000);
     expect(DEFAULT_MAX_RETRIES).toBe(2);
+    expect(DEFAULT_API_URL).toMatch(/^https:\/\/[^/]+$/);
   });
 
   it("treats ProviderError with a stable code", () => {

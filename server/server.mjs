@@ -8,7 +8,7 @@
  *
  * ENV:
  *   GROQ_API_KEY            required
- *   GROQ_MODEL              default "llama-3.3-70b-versatile"
+ *   GROQ_MODEL              default "openai/gpt-oss-20b"
  *   COMMIT_IN_API_TOKEN     optional shared secret; when set, the CLI must
  *                           send it as `Authorization: Bearer <token>`
  *   PORT                    default 8787
@@ -20,7 +20,7 @@ import { createServer } from "node:http";
 const GROQ_BASE = "https://api.groq.com/openai/v1/chat/completions";
 const PORT = Number(process.env.PORT || 8787);
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
 const SERVICE_TOKEN = process.env.COMMIT_IN_API_TOKEN || "";
 
 if (!GROQ_API_KEY) {

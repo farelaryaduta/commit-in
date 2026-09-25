@@ -6,6 +6,7 @@
  * JSON for human review.
  *
  * Usage:
+ *   npm run eval        (uses the default service URL)
  *   COMMIT_IN_API_URL=https://ci.example.com npm run eval
  */
 import { readFileSync } from "node:fs";
@@ -29,6 +30,7 @@ import {
 import { buildPrompt, parseSuggestions } from "../src/prompt";
 import {
   RemoteProvider,
+  DEFAULT_API_URL,
   DEFAULT_MAX_RETRIES,
   DEFAULT_TIMEOUT_MS,
 } from "../src/providers";
@@ -47,11 +49,6 @@ const cwd = process.cwd();
 const root = await getRepoRoot(cwd);
 const env: Record<string, string | undefined> = { ...process.env };
 const config = loadConfig(root, env).config;
-
-if (!config.apiUrl) {
-  console.error("eval: COMMIT_IN_API_URL is not set");
-  process.exit(1);
-}
 
 const staged = await getStagedFiles(root);
 if (staged.length === 0) {
@@ -91,7 +88,7 @@ const request = buildPrompt({
 request.temperature = config.temperature;
 
 const provider = new RemoteProvider({
-  apiUrl: config.apiUrl,
+  apiUrl: config.apiUrl ?? DEFAULT_API_URL,
   apiToken: config.apiToken,
   timeoutMs: config.timeoutMs,
   maxRetries: config.maxRetries,

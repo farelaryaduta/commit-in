@@ -5,6 +5,9 @@ export const DEFAULT_TIMEOUT_MS = 30_000;
 export const DEFAULT_MAX_RETRIES = 2;
 const RETRY_BACKOFF_MS = [500, 1500] as const;
 
+/** Service used when nothing is configured — swapped via COMMIT_IN_API_URL. */
+export const DEFAULT_API_URL = "https://commit-in.farelminecraft450.workers.dev";
+
 const RETRIABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
 
 export interface RemoteProviderOptions {

@@ -4,6 +4,14 @@ export const NO_SUGGESTIONS = "NO_SUGGESTIONS";
 
 const BULLET_RE = /^\s*(?:[-*]|\d+[.)])\s+(.+)$/;
 
+/** Strip accidental markdown decorations someone might wrap a subject in. */
+function cleanSubject(s: string): string {
+  return s
+    .replace(/^(?:\*\*|__|[`*_])+/, "")
+    .replace(/(?:\*\*|__|[`*_])+$/, "")
+    .trim();
+}
+
 function isUsable(s: Suggestion): boolean {
   return typeof s.subject === "string" && s.subject.trim() !== "";
 }
@@ -59,7 +67,7 @@ export function parseSuggestions(
         const parsed = arr
           .filter((x): x is { subject?: unknown; body?: unknown } => typeof x === "object" && x !== null)
           .map((x) => ({
-            subject: String(x.subject ?? "").trim(),
+            subject: cleanSubject(String(x.subject ?? "")),
             body: typeof x.body === "string" ? x.body.trim() : undefined,
           }))
           .filter(isUsable);
@@ -80,7 +88,7 @@ export function parseSuggestions(
     const line = rawLine.replace(/\s+$/, "");
     const m = BULLET_RE.exec(line);
     if (m) {
-      current = { subject: m[1]!.trim() };
+      current = { subject: cleanSubject(m[1]!) };
       out.push(current);
     } else if (current && /^\s+[\S]/.test(line)) {
       const body = line.trim();
@@ -99,7 +107,7 @@ export function parseSuggestions(
 
   const single = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)[0];
   if (single) {
-    let list = [{ subject: single }];
+    let list = [{ subject: cleanSubject(single) }];
     if (style?.conventional) list = enforceConventional(list, style, typeHint);
     return list;
   }

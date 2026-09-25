@@ -17,6 +17,14 @@ const CONV: StyleProfile = {
 };
 
 describe("parseSuggestions", () => {
+  it("strips accidental markdown decorations from subjects", () => {
+    const raw = ["1. **feat(api): add login**", "2. __fix(ui): spacing__"].join("\n");
+    expect(parseSuggestions(raw).map((s) => s.subject)).toEqual([
+      "feat(api): add login",
+      "fix(ui): spacing",
+    ]);
+  });
+
   it("parses a bare JSON array", () => {
     const raw = JSON.stringify([
       { subject: "feat(api): add login", body: "adds token refresh" },

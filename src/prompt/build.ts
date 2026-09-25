@@ -97,6 +97,9 @@ function constraintSection(input: BuildPromptInput): string[] {
     bullet(style.usesEmoji ? "Match the repo's emoji usage in subjects." : "Do not use emojis."),
     bullet("A subject may be followed by indented body lines when the change needs explanation."),
     bullet("Never mention file paths or content absent from the diff."),
+    bullet("Write subjects that describe the change's purpose, not the diff's mechanics."),
+    bullet("Avoid filler like \"add lines\" or \"update file\" when a more meaningful subject exists."),
+    bullet("A subject must make sense to someone who never sees the diff."),
     bullet("NEVER repeat a recent commit subject verbatim."),
   ];
   return out;

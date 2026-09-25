@@ -1,83 +1,69 @@
 # commit-in
 
-**AI-powered commit messages that match your repo's style — right on the command line.**
+A command-line tool that writes your git commit message for you, so you don't
+have to.
 
-`commit-in` is a zero-install CLI (`npx commit-in`) that turns your staged
-changes into a ready-to-commit Git/GitHub message. It reads what you've staged,
-classifies the files, learns how this repository writes commit history, asks a
-hosted service backed by Groq (DeepSeek, or any model) for suggestions, then
-lets you pick, edit, or write the final message — and commits it for you.
+You change some code, stage it, run `commit-in`, and it reads what you did,
+reads how this repository has been committing, and suggests a few messages
+that fit. You pick one (or edit it), hit enter, and it commits.
 
 ```bash
 npx commit-in
 ```
 
-Works with any Git repository, and pushes straight to GitHub with `--push`.
+No install, no API keys, nothing to set up. It works in any Git repository
+and it pushes commits to GitHub when you tell it to.
 
 ---
 
-## Why?
+## What it does
 
-Writing commit messages is monotonous, and every repo has its own style. Let a
-model that has seen the whole diff draft the message, while you keep the final
-word. `commit-in` is built around a few principles:
+Every repository ends up with its own commit style. Some use
+`feat(users): add password reset`, some just write sentences ("Fixes login bug
+on Safari"), some are written in Indonesian, some end everything with emoji.
+commit-in notices that.
 
-- **You stay in control.** It *suggests* and *remembers* your style — you pick,
-  edit, or replace any message before it lands.
-- **Your secrets never leave the machine.** Sensitive files contribute
-  metadata only, never content, and a redaction pass strips keys and
-  credentials from diffs.
-- **No API keys on your machine.** The CLI talks to a commit-in service you
-  host; the model key lives server-side only.
+Four steps, all automatic:
+
+1. Look at what's staged and what kind of files they are (controllers, models,
+   routes, migrations... it knows Laravel and Next.js, and guesses decently for
+   everything else).
+2. Read recent commit history to figure out the *style*: what prefixes you use,
+   whether you write English or Indonesian, how long your subjects are.
+3. Put a small redacted diff together with that style guide and ask a hosted
+   model for suggestions.
+4. Show you the options. Pick one, tweak it, or type your own. Done.
+
+The model key lives on a server, never on your machine, so there's nothing for
+you to configure or leak.
 
 ---
 
-## Quick start
+## Getting started
 
-Requires **Node.js >= 20.12** and Git.
+Requires **Node.js 20.12+** and Git.
 
 ```bash
-# run without installing anything
+# run it straight from the internet, nothing to install
 npx commit-in
 
-# or install once
+# or install it once (it's also available as `ci`)
 npm install -g commit-in
+ci
 ```
 
-Point the CLI at your commit-in service (see [Host your own
-service](#host-your-own-service)):
+That's it. It talks to a public commit-in service by default. If you self-host
+your own service instead, point it there once:
 
 ```bash
-export COMMIT_IN_API_URL=https://ci.example.com
-# optionally, if your service requires a shared token:
-export COMMIT_IN_API_TOKEN=...
-```
-
-Or put it in `.commitinrc.json` so it's persistent:
-
-```json
-{ "apiUrl": "https://ci.example.com", "apiToken": "..." }
-```
-
-Want to try it right now, without any service?
-
-```bash
-npx commit-in --offline          # rule-based suggestions, no network
+export COMMIT_IN_API_URL=https://your-service.example
 ```
 
 ---
 
-## What you see on every run
-
-A header and status panel summarize exactly what will be sent before anything
-happens:
+## What a session looks like
 
 ```text
-┌──────────────────────────────────────────────┐
-│  commit-in                                   │
-└──────────────────────────────────────────────┘
-
-
   ┌─ repository status ────────────────────────┐
   │ branch: main                               │
   │ 4 staged file(s)                           │
@@ -86,203 +72,136 @@ happens:
   │   M  routes/web.php                           route       +2  -1
   │   M  composer.lock                            deps        +30 -5  ignored for AI
   │ working tree: 2 staged, 1 modified, 3 untracked
-  │ hints: type=feat, scope=task
   │ style: conventional commits, en, subject <= 72 chars
   └─────────────────────────────────────────────┘
 
   Choose a commit message:
-  > feat(task): add task controller and model
-    ...
+  ▸ feat(task): add task controller and model
+    feat(task): wire task routes
+    chore(task): add task scaffolding
 ```
 
-Files flagged `sensitive` or `ignored for AI` appear here but **never** leak
-their contents into the prompt.
+Sensitive files (`.env`, private keys) get flagged in that panel, but their
+contents never leave your machine.
 
 ---
 
-## Features
+## Understanding the suggestions
 
-- **Repo-aware suggestions.** Detects Conventional Commits style — type/scope
-  usage, subject shapes, emoji, and language (English or Indonesian) — from
-  your history, and avoids repeating recent per-file subjects.
-- **Framework presets.** Built-in classification for Laravel and Next.js with
-  generic fallbacks, so type/scope hints fit the codebase.
-- **Safety by default.** Lockfiles, minified assets, build output, `.env`,
-  keys, and credentials are never sent to the model; diffs are redacted.
-- **Diff budget.** Per-file and total diff limits (defaults 2 000 / 12 000
-  chars) keep prompts cheap while prioritizing source files.
-- **Automatic staging.** Nothing staged? `commit-in` offers to stage all
-  working-tree changes or lets you pick files individually.
-- **Status dashboard.** A welcome panel shows your branch, staged files,
-  working tree, hints, and detected style before the model is ever asked.
-- **Offline mode.** `--offline` runs the full flow without a service or
-  network — great for demos and tests.
+Most suggestions look like `type(scope): subject`. The parts:
 
----
-
-## Usage
-
-```bash
-# suggest and commit (interactive)
-commit-in
-
-# stage everything, take the first suggestion, commit and push
-commit-in -a -y -c --push
-
-# skip committing (just suggest)
-commit-in -n
-
-# force a type/scope
-commit-in -t fix -s orders
-
-# inspect exactly what would be sent to the model
-commit-in -e
-commit-in -e --full     # include the full diff
-```
-
-### Flags
-
-| Flag | Meaning |
+| Part | What it is |
 | --- | --- |
-| `--stageddonly` | Never auto-stage; only use already-staged files |
-| `-a, --all` | Stage all tracked working-tree changes first (`git add -u`) |
-| `-c, --commit` | Skip final confirmation, run `git commit` |
-| `-n, --dry-run` | Print the chosen message without committing |
-| `--push` | Run `git push` after a successful commit |
-| `-e, --echo` / `--show-prompt` | Print the model prompt and exit |
-| `--full` | With `--echo`, also print the full diff |
-| `-y, --yes` | Skip all prompts; use the first suggestion |
-| `--offline` | Skip the service; use rule-based suggestions |
-| `--verbose` | Print diagnostics (provider, latency) |
-| `-t, --type <type>` | Force a commit type (`feat`, `fix`, `refactor`, …) |
-| `-s, --scope <scope>` | Force a commit scope |
-| `--count <n>` | Number of suggestions (1–5) |
-| `--api-url <url>` | Base URL of your hosted commit-in service |
-| `--language <lang>` | `auto`, `en`, or `id` |
-| `--body` | Capture an optional body after selecting a suggestion |
-| `--force-conventional` | Force Conventional Commits style |
-| `--no-verify` | Pass `--no-verify` to `git commit` |
-| `-v, --version` | Print version |
-| `-h, --help` | Print help |
+| `type` | What kind of change this is (see below) |
+| `scope` | Which part of the app it touches — commit-in usually takes this from the file names (`app.ts` → `app`) |
+| `subject` | A short summary that fits on one line |
+
+The classic Conventional Commits types, and when commit-in reaches for them:
+
+| Type | What it means |
+| --- | --- |
+| `feat` | A new feature. Something users can now do that they couldn't before. |
+| `fix` | A bug fix. Something that was broken and now works. |
+| `refactor` | Code moved around or rewritten, behavior unchanged. No new feature, no bug fixed. |
+| `docs` | Documentation only: README, comments, guides. |
+| `style` | Formatting: whitespace, lints, missing semicolons. Doesn't affect behavior. |
+| `test` | Adding or changing tests. |
+| `build` | Build system, dependencies, package managers, bundlers. |
+| `ci` | CI/CD configuration: pipelines, workflows, deployment scripts. |
+| `perf` | Performance improvements. |
+| `chore` | Housekeeping: tasks, config tweaks, version bumps. Nothing user-facing. |
+| `revert` | Undoing a previous commit. |
+
+These prefixes aren't mandatory. If the repository never uses them, commit-in
+matches the style it sees and skips the `type(...)` part entirely.
+
+### Why the subject is short
+
+Commit-in learns from your history, including how long your subjects usually
+are. That's deliberate: a subject is the headline, not the whole story. When a
+change needs more explaining, commit-in will offer to append a body.
 
 ---
 
-## GitHub
+## Commands
 
-`commit-in` runs on any Git repository — including a fresh GitHub clone — and
-commits locally like you would. To get your work up:
+Everyday:
 
-```bash
-npx commit-in -a -y -c --push
-```
+| Command | What it does |
+| --- | --- |
+| `npx commit-in` | Suggest and commit, asking before anything is committed |
+| `npx commit-in -n` | Dry run: print the message, don't commit anything |
+| `npx commit-in -y` | Skip the questions, take the first suggestion and go |
+| `npx commit-in --push` | Commit and then `git push` |
+| `npx commit-in -a` | Stage all tracked changes first, then run |
+| `npx commit-in --stageddonly` | Only look at what's already staged, never auto-stage |
+| `npx commit-in --offline` | Suggestions from rules, no network needed |
 
-- `-a` stages everything, `-y` picks the model's best message, `-c` commits,
-  and `--push` runs `git push` — your branch appears on GitHub ready for a PR.
-- Point `commit-in` at your hosted service via `COMMIT_IN_API_URL` (or
-  `"apiUrl"` in `.commitinrc.json`) and set `COMMIT_IN_API_TOKEN` as a secret
-  if your service uses one — it works great with GitHub Codespaces and
-  Actions secrets.
-- Nothing about `commit-in` is GitHub-specific — the model only ever sees your
-  local staged diff, so the same flow works with GitLab, Bitbucket, or any
-  remote.
+Making it think differently:
 
-### GitLab, Bitbucket & others
+| Command | What it does |
+| --- | --- |
+| `npx commit-in -t fix` | Force the type to `fix` |
+| `npx commit-in -s orders` | Force the scope to `orders` |
+| `npx commit-in --count 5` | Ask for 5 options instead of 3 |
+| `npx commit-in --body` | Offer to add a body after you pick a subject |
+| `npx commit-in --language id` | Suggestions in Indonesian |
+| `npx commit-in --force-conventional` | Use Conventional Commits even if this repo doesn't |
 
-Identical usage — only `git push` knows about the remote, so the tool doesn't
-care where your code lives.
+Looking under the hood:
+
+| Command | What it does |
+| --- | --- |
+| `npx commit-in -e` | Print the prompt sent to the model, then stop |
+| `npx commit-in --verbose` | Show where suggestions came from and how long it took |
+| `npx commit-in -h` | Full list of options |
 
 ---
 
 ## Configuration
 
-`commit-in` reads `.commitinrc.json` from the **current directory** (no upward
-search). Environment variables (`COMMIT_IN_*`) override it; CLI flags override
-everything.
+You don't need it. The default behaviour is a reasonable starting point and the
+command works the moment you run it. If you want to change things for a
+project, commit-in reads a `.commitinrc.json` in the current folder:
 
 ```jsonc
 {
-  // "apiUrl": "https://ci.example.com",
-  // "apiToken": "shared-secret-for-your-service",
-  // "count": 3,
-  // "historyDepth": 50,
-  // "maxDiffChars": 12000,
-  // "language": "auto",
-  // "body": false,
-  // "timeoutMs": 30000,
-  // "maxRetries": 2,
-  // "temperature": 0.7,
-  // "maxSubjectLength": 72,
-  // "ignore": [],
-  // "forceConventional": false
+  "count": 3,            // suggestions per run (1-5)
+  "language": "auto",    // auto, en, id
+  "body": false,         // offer a body after picking a subject
+  "forceConventional": false,
+  "ignore": ["coverage/**"]   // extra paths never sent to the model
 }
 ```
 
-Invalid file values fail fast; invalid environment values warn and are ignored.
+Environment variables (`COMMIT_IN_*`) override the file, and flags override
+everything.
 
-### Exit codes
-
-| Code | Meaning |
-| --- | --- |
-| 0 | Success (committed or dry-run) |
-| 1 | Runtime error, commit/push failure, no changes |
-| 2 | Usage error (no repo, bad config, service URL not configured) |
-| 3 | Sensitive files staged and aborted |
-| 130 | Cancelled (Ctrl+C / escape) |
+Exit codes: `0` committed or dry-run, `1` something went wrong, `2` bad usage
+(not a git repo or bad config), `3` sensitive files were staged and it stopped,
+`130` you cancelled.
 
 ---
 
 ## Safety
 
-- Sensitive paths (`.env*` except examples, `.pem`, `.key`, credentials,
-  service accounts, private keys) are flagged — their **content is never
-  sent**, and you can abort (exit 3).
-- Lockfiles, min/map files, build and vendor directories, binaries, and
-  anything matched by `ignore` never leave the machine.
-- A pure redaction pass strips private key blocks and common secret formats
-  from diff text before it's sent.
-
----
-
-## How it works
-
-1. Read staged files (`git diff --staged`), auto-staging when nothing is
-   staged.
-2. Classify each file (presets + generic rules) and infer a type/scope hint.
-3. Learn the repo's commit style from recent history (ignoring merges and
-   reverts).
-4. Budget and redact diffs; assemble the system + user prompt.
-5. POST the prompt to your hosted commit-in service (Groq by default) and
-   parse the suggestions robustly. On service failure (or `--offline`), fall
-   back to deterministic rule-based suggestions.
-6. You pick, edit, or write a message; `commit-in` commits with `git commit -F -`.
+- `.env`, private keys, and credential-looking files are flagged; their contents
+  are never sent. commit-in stops entirely if you stage them, unless you say no.
+- Lockfiles, minified assets, build output, and binaries never leave your
+  machine. `ignore` in the config adds more paths.
+- A redaction pass scrubs obvious secret formats from any diff before it goes
+  out.
 
 ---
 
 ## Host your own service
 
-The npm package only ships the CLI — the model lives behind a service you
-control, so **nobody ever needs an API key**. A zero-dependency reference
-server (Groq backend) is included in `server/`:
+The published tool points at a public commit-in service. If you'd rather your
+diffs not leave your network (or you want full control of the model), the
+reference service is in `server/` and deploys to Cloudflare Workers with
+`npm run deploy`. More in [`server/README.md`](server/README.md).
 
-```bash
-GROQ_API_KEY=gsk_... node server/server.mjs
-```
-
-See [`server/README.md`](server/README.md) for the full contract, optional
-shared token, and how to swap models (e.g. DeepSeek) later without touching
-the CLI.
-
-## Development
-
-```bash
-npm install
-npm run dev -- --help      # run from source
-npm test
-npm run typecheck
-npm run build              # bundles to dist/cli.mjs
-GROQ_API_KEY=... npm run serve   # run the hosted service locally
-npm run eval               # manual real-model evaluation (needs COMMIT_IN_API_URL)
-```
+---
 
 ## License
 

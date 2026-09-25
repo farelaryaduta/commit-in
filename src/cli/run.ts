@@ -24,6 +24,7 @@ import {
 import { run } from "../git/run";
 import { buildPrompt, parseSuggestions } from "../prompt";
 import {
+  DEFAULT_API_URL,
   ProviderError,
   RemoteProvider,
   fallbackSuggestions,
@@ -262,15 +263,6 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
   // ---- provider -----------------------------------------------------------
   const started = Date.now();
   const provider = opts.offline ? null : resolveProviderFor(config, deps);
-  if (provider === null && !opts.offline) {
-    err(
-      "commit-in is not configured.\n" +
-        "  Point it at your hosted commit-in service via COMMIT_IN_API_URL\n" +
-        "  or \"apiUrl\" in .commitinrc.json — or use --offline for rule-based\n" +
-        "  suggestions without a service.",
-    );
-    return EXIT_USAGE;
-  }
 
   // ---- generate + parse ----------------------------------------------------
   let raw: string | undefined;
@@ -380,11 +372,10 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
 function resolveProviderFor(
   config: ResolvedConfig,
   deps: RunDeps,
-): LLMProvider | null {
+): LLMProvider {
   if (deps.providerOverride) return deps.providerOverride;
-  if (!config.apiUrl) return null;
   return new RemoteProvider({
-    apiUrl: config.apiUrl,
+    apiUrl: config.apiUrl ?? DEFAULT_API_URL,
     apiToken: config.apiToken,
     timeoutMs: config.timeoutMs,
     maxRetries: config.maxRetries,

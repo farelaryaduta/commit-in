@@ -278,26 +278,6 @@ describe("runCli", () => {
     }
   });
 
-  it("exits 2 when no service URL is configured", async () => {
-    const repo = await TempRepo.init();
-    try {
-      repo.writeFile("a.txt", "x\n");
-      await repo.addAll();
-      await repo.commit("chore: init");
-      repo.writeFile("a.txt", "x\ny\n");
-      await repo.addAll();
-      const err: string[] = [];
-      const deps = await depsFor(repo);
-      deps.err = (m) => err.push(m);
-      deps.providerOverride = undefined;
-      const code = await runCli(baseOptions(), deps);
-      expect(code).toBe(EXIT_USAGE);
-      expect(err.join("\n")).toContain("COMMIT_IN_API_URL");
-    } finally {
-      repo.cleanup();
-    }
-  });
-
   it("falls back to rule-based suggestions when the remote service is unreachable", async () => {
     const repo = await TempRepo.init();
     try {
