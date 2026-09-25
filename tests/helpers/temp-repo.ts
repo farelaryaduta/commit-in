@@ -11,11 +11,11 @@ export class TempRepo {
   }
 
   static async init(): Promise<TempRepo> {
-    const dir = mkdtempSync(join(tmpdir(), "commitnow-test-"));
+    const dir = mkdtempSync(join(tmpdir(), "gitcomm-test-"));
     const repo = new TempRepo(dir);
     await repo.git(["init", "-q"]);
-    await repo.git(["config", "user.name", "commitnow-test"]);
-    await repo.git(["config", "user.email", "commitnow-test@example.com"]);
+    await repo.git(["config", "user.name", "gitcomm-test"]);
+    await repo.git(["config", "user.email", "gitcomm-test@example.com"]);
     await repo.git(["config", "commit.gpgsign", "false"]);
     return repo;
   }

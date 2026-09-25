@@ -1,6 +1,6 @@
-# commitnow service
+# gitcomm service
 
-Turns the prompts assembled by the `commitnow` CLI into commit-message
+Turns the prompts assembled by the `gitcomm` CLI into commit-message
 suggestions using [Groq](https://groq.com). Two entrypoints, same API:
 
 - [`worker.mjs`](worker.mjs) — Cloudflare Workers (recommended, free & always awake)

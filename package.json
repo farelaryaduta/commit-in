@@ -1,10 +1,10 @@
 {
-  "name": "commitnow",
+  "name": "gitcomm",
   "version": "0.1.0",
   "description": "AI-powered git commit message suggestions that match your repository's style",
   "type": "module",
   "bin": {
-    "commitnow": "./dist/cli.mjs",
+    "gitcomm": "./dist/cli.mjs",
     "ci": "./dist/cli.mjs"
   },
   "files": [

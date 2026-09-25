@@ -7,7 +7,7 @@ import { loadConfig, ConfigError, findConfigFile } from "../../src/config";
 import { DEFAULTS } from "../../src/config";
 
 function tempDir(): { dir: string; cleanup: () => void } {
-  const dir = mkdtempSync(join(tmpdir(), "commitnow-config-"));
+  const dir = mkdtempSync(join(tmpdir(), "gitcomm-config-"));
   return { dir, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
@@ -32,11 +32,11 @@ describe("loadConfig", () => {
     }
   });
 
-  it("loads values from .commitnowrc.json", () => {
+  it("loads values from .gitcommrc.json", () => {
     const { dir, cleanup } = tempDir();
     try {
       writeFileSync(
-        join(dir, ".commitnowrc.json"),
+        join(dir, ".gitcommrc.json"),
         JSON.stringify({
           apiUrl: "https://ci.example.com",
           apiToken: "secret-token",
@@ -58,7 +58,7 @@ describe("loadConfig", () => {
     const { dir, cleanup } = tempDir();
     try {
       writeFileSync(
-        join(dir, ".commitnowrc.json"),
+        join(dir, ".gitcommrc.json"),
         JSON.stringify({ count: 2, apiUrl: "https://file.example.com" }),
       );
       const { config } = loadConfig(dir, {
@@ -85,7 +85,7 @@ describe("loadConfig", () => {
   it("throws ConfigError on invalid JSON", () => {
     const { dir, cleanup } = tempDir();
     try {
-      writeFileSync(join(dir, ".commitnowrc.json"), "not json{");
+      writeFileSync(join(dir, ".gitcommrc.json"), "not json{");
       expect(() => loadConfig(dir, {})).toThrow(ConfigError);
       expect(() => loadConfig(dir, {})).toThrow("not valid JSON");
     } finally {
@@ -97,7 +97,7 @@ describe("loadConfig", () => {
     const { dir, cleanup } = tempDir();
     try {
       writeFileSync(
-        join(dir, ".commitnowrc.json"),
+        join(dir, ".gitcommrc.json"),
         JSON.stringify({ count: 99, apiUrl: "not-a-url" }),
       );
       try {
@@ -153,8 +153,8 @@ describe("loadConfig", () => {
     const { dir, cleanup } = tempDir();
     try {
       expect(findConfigFile(dir)).toBeUndefined();
-      writeFileSync(join(dir, "commitnowrc.json"), "{}");
-      expect(findConfigFile(dir)).toBe(join(dir, "commitnowrc.json"));
+      writeFileSync(join(dir, "gitcommrc.json"), "{}");
+      expect(findConfigFile(dir)).toBe(join(dir, "gitcommrc.json"));
     } finally {
       cleanup();
     }
@@ -163,7 +163,7 @@ describe("loadConfig", () => {
   it("tolerates unknown keys in the config file", () => {
     const { dir, cleanup } = tempDir();
     try {
-      writeFileSync(join(dir, ".commitnowrc.json"), JSON.stringify({ futureKey: 1 }));
+      writeFileSync(join(dir, ".gitcommrc.json"), JSON.stringify({ futureKey: 1 }));
       const { config } = loadConfig(dir, {});
       expect(config.apiUrl).toBeUndefined();
     } finally {

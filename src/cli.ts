@@ -28,7 +28,7 @@ function renderStatus(view: StatusView): void {
     for (const line of statusPanel(view)) process.stdout.write(`${line}\n`);
     return;
   }
-  intro(`${pc.bold("commitnow")} ${pc.dim(`v${readVersion()}`)}`);
+  intro(`${pc.bold("gitcomm")} ${pc.dim(`v${readVersion()}`)}`);
   const lines = statusPanel(view, uiColors);
   note(lines.join("\n"), "repository status");
 }
@@ -42,7 +42,7 @@ function readVersion(): string {
 
 export function createProgram(): Command {
   return new Command()
-    .name("commitnow")
+    .name("gitcomm")
     .description("Suggest and run git commit messages based on your staged changes")
     .version(readVersion(), "-v, --version")
     .option(
@@ -63,7 +63,7 @@ export function createProgram(): Command {
     .option("-t, --type <type>", "force a conventional commit type")
     .option("-s, --scope <scope>", "force a conventional commit scope")
     .option("--count <count>", "number of suggestions to request (1-5)", "3")
-    .option("--api-url <url>", "override the default commitnow service URL")
+    .option("--api-url <url>", "override the default gitcomm service URL")
     .option("--language <language>", "force suggestion language")
     .option("--body", "capture an optional body after selecting a suggestion")
     .option("--force-conventional", "force Conventional Commits style even with plain history")

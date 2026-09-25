@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const LANGUAGE_VALUES = ["auto", "en", "id"] as const;
 
-/** Zod schema for `.commitnowrc.json`. Unknown keys are tolerated. */
+/** Zod schema for `.gitcommrc.json`. Unknown keys are tolerated. */
 export const ConfigFileSchema = z
   .object({
     apiUrl: z
@@ -28,7 +28,7 @@ export type ConfigFile = z.infer<typeof ConfigFileSchema>;
 
 /** Fully resolved configuration used across the CLI. */
 export interface ResolvedConfig {
-  /** Base URL of the hosted commitnow service, e.g. https://ci.example.com. */
+  /** Base URL of the hosted gitcomm service, e.g. https://ci.example.com. */
   apiUrl?: string;
   /** Optional bearer token for the hosted service. */
   apiToken?: string;
