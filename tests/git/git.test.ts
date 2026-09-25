@@ -15,6 +15,7 @@ import {
   isGitRepo,
   stagePaths,
   stageTracked,
+  stageAllChanges,
 } from "../../src/git";
 
 const repos: TempRepo[] = [];
@@ -220,6 +221,19 @@ describe("staging helpers", () => {
     await stageTracked(repo.dir);
     const staged = await getStagedFiles(repo.dir);
     expect(staged.map((f) => f.path)).toEqual(["t.txt"]);
+  });
+
+  it("stageAllChanges stages tracked changes and untracked files", async () => {
+    const repo = await makeRepo();
+    repo.writeFile("t.txt", "1");
+    await repo.addAll();
+    await repo.commit("init");
+    repo.writeFile("t.txt", "2");
+    repo.writeFile("untracked-new.txt", "1");
+
+    await stageAllChanges(repo.dir);
+    const staged = await getStagedFiles(repo.dir);
+    expect(staged.map((f) => f.path).sort()).toEqual(["t.txt", "untracked-new.txt"]);
   });
 
   it("stagePaths stages only the listed paths", async () => {

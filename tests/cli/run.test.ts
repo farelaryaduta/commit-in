@@ -79,6 +79,21 @@ describe("runCli", () => {
     }
   });
 
+  it("stages and commits brand-new untracked files when auto-staging", async () => {
+    const repo = await TempRepo.init();
+    try {
+      repo.writeFile("a.txt", "one\n");
+      await repo.addAll();
+      await repo.commit("chore: init");
+      repo.writeFile("b.txt", "brand new\n");
+      const code = await runCli(baseOptions(), await depsFor(repo));
+      expect(code).toBe(EXIT_OK);
+      expect((await logSubjects(repo))[0]).toBe("feat(api): add login endpoint");
+    } finally {
+      repo.cleanup();
+    }
+  });
+
   it("--dry-run prints the message without committing", async () => {
     const repo = await TempRepo.init();
     try {

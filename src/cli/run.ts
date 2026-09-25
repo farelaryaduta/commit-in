@@ -14,6 +14,7 @@ import {
   getStagedFiles,
   getWorkingTreeChanges,
   stageTracked,
+  stageAllChanges,
   stagePaths,
   getStagedDiffByFile,
   getRecentCommits,
@@ -131,7 +132,7 @@ async function execute(opts: RunOptions, deps: RunDeps): Promise<number> {
         initialValue: true,
       }));
     if (stageAll) {
-      await stageTracked(root);
+      await stageAllChanges(root);
       staged = await getStagedFiles(root);
     } else {
       const picked = await prompts.multiselect({

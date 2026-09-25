@@ -32,6 +32,12 @@ export async function stageTracked(cwd: string): Promise<void> {
   requireOk(cwd, ["add", "-u"], res);
 }
 
+/** Stage every working-tree change, including untracked files (`git add -A`). */
+export async function stageAllChanges(cwd: string): Promise<void> {
+  const res = await run(cwd, ["add", "-A"]);
+  requireOk(cwd, ["add", "-A"], res);
+}
+
 /** Stage the given paths (`git add -- <paths>`). */
 export async function stagePaths(cwd: string, paths: string[]): Promise<void> {
   if (paths.length === 0) {

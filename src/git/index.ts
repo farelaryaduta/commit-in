@@ -11,5 +11,5 @@ export {
 } from "./staged";
 export type { RawNameStatusEntry, RawNumstatEntry } from "./staged";
 export { getRecentCommits, getRecentCommitsForPaths, getCurrentBranch } from "./log";
-export { commit, stageTracked, stagePaths, getWorkingTreeChanges, parsePorcelain } from "./commit";
+export { commit, stageTracked, stageAllChanges, stagePaths, getWorkingTreeChanges, parsePorcelain } from "./commit";
 export type { WorkingTreeFile } from "./commit";
