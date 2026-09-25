@@ -11,9 +11,6 @@
   <a href="https://www.npmjs.com/package/gitcomm">
     <img src="https://img.shields.io/npm/v/gitcomm?color=%237c3aed&label=npm" alt="npm version" />
   </a>
-  <a href="https://www.npmjs.com/package/gitcomm">
-    <img src="https://img.shields.io/npm/dm/gitcomm?color=%2310b981" alt="npm downloads" />
-  </a>
   <a href="https://github.com/farelaryaduta/commit-in/blob/main/LICENSE">
     <img src="https://img.shields.io/npm/l/gitcomm?color=%233b82f6" alt="license" />
   </a>
