@@ -28,7 +28,7 @@ export type ConfigFile = z.infer<typeof ConfigFileSchema>;
 
 /** Fully resolved configuration used across the CLI. */
 export interface ResolvedConfig {
-  /** Base URL of the hosted commit-in service, e.g. https://ci.example.com. */
+  /** Base URL of the hosted commitin service, e.g. https://ci.example.com. */
   apiUrl?: string;
   /** Optional bearer token for the hosted service. */
   apiToken?: string;

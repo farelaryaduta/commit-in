@@ -1,6 +1,6 @@
-# commit-in service
+# commitin service
 
-Turns the prompts assembled by the `commit-in` CLI into commit-message
+Turns the prompts assembled by the `commitin` CLI into commit-message
 suggestions using [Groq](https://groq.com). Two entrypoints, same API:
 
 - [`worker.mjs`](worker.mjs) — Cloudflare Workers (recommended, free & always awake)

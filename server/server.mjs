@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * commit-in service (Groq backend).
+ * commitin service (Groq backend).
  *
- * A zero-dependency server that turns the prompt assembled by the commit-in
+ * A zero-dependency server that turns the prompt assembled by the commitin
  * CLI into commit-message suggestions using Groq. End users never need an API
  * key — only this server does.
  *
@@ -162,5 +162,5 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`commit-in service listening on http://0.0.0.0:${PORT} (model: ${GROQ_MODEL})`);
+  console.log(`commitin service listening on http://0.0.0.0:${PORT} (model: ${GROQ_MODEL})`);
 });

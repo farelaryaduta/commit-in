@@ -1,31 +1,31 @@
 <p align="center">
-  <h1 align="center">commit-in</h1>
+  <h1 align="center">commitin</h1>
   <p align="center">
     AI-powered commit messages that match your repository's style.
     <br />
-    <a href="https://www.npmjs.com/package/commit-in"><strong>View on npm »</strong></a>
+    <a href="https://www.npmjs.com/package/commitin"><strong>View on npm »</strong></a>
   </p>
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/commit-in">
-    <img src="https://img.shields.io/npm/v/commit-in?color=%237c3aed&label=npm" alt="npm version" />
+  <a href="https://www.npmjs.com/package/commitin">
+    <img src="https://img.shields.io/npm/v/commitin?color=%237c3aed&label=npm" alt="npm version" />
   </a>
-  <a href="https://www.npmjs.com/package/commit-in">
-    <img src="https://img.shields.io/npm/dm/commit-in?color=%2310b981" alt="npm downloads" />
+  <a href="https://www.npmjs.com/package/commitin">
+    <img src="https://img.shields.io/npm/dm/commitin?color=%2310b981" alt="npm downloads" />
   </a>
   <a href="https://github.com/farelaryaduta/commit-in/blob/main/LICENSE">
-    <img src="https://img.shields.io/npm/l/commit-in?color=%233b82f6" alt="license" />
+    <img src="https://img.shields.io/npm/l/commitin?color=%233b82f6" alt="license" />
   </a>
-  <img src="https://img.shields.io/node/v/commit-in?color=%23f59e0b" alt="node version" />
+  <img src="https://img.shields.io/node/v/commitin?color=%23f59e0b" alt="node version" />
 </p>
 
 ---
 
-Stop staring at your staged files wondering what to write. **commit-in** reads your diff, studies how your repo writes its commit history, and suggests messages that actually belong there. You pick one (or write your own), and it commits for you.
+Stop staring at your staged files wondering what to write. **commitin** reads your diff, studies how your repo writes its commit history, and suggests messages that actually belong there. You pick one (or write your own), and it commits for you.
 
 ```bash
-npx commit-in
+npx commitin
 ```
 
 That's it. Works on any Git repository. No setup required.
@@ -40,7 +40,7 @@ That's it. Works on any Git repository. No setup required.
 4. **Lets you pick, edit, or write your own** — then commits with `git commit`. Optionally pushes too.
 
 ```text
-◆  commit-in
+◆  commitin
 
 ┌─ repository status ────────────────────────────────┐
 │ branch: main                                       │
@@ -67,14 +67,14 @@ That's it. Works on any Git repository. No setup required.
 ## Commit and push in one go
 
 ```bash
-npx commit-in --push
+npx commitin --push
 ```
 
 ---
 
 ## Understanding Commit Types
 
-If your repository uses [Conventional Commits](https://www.conventionalcommits.org/), commit-in will automatically follow that style. Here's what each type means:
+If your repository uses [Conventional Commits](https://www.conventionalcommits.org/), commitin will automatically follow that style. Here's what each type means:
 
 | Type | When to use | Example |
 |---|---|---|
@@ -99,10 +99,10 @@ feat(auth): add two-factor authentication
 └────────────── Type: what kind of change this is
 ```
 
-commit-in detects whether your repo uses this style by reading your recent commit history. If most of your commits follow the pattern, it will too. You can also force it:
+commitin detects whether your repo uses this style by reading your recent commit history. If most of your commits follow the pattern, it will too. You can also force it:
 
 ```bash
-npx commit-in --force-conventional
+npx commitin --force-conventional
 ```
 
 ---
@@ -165,13 +165,13 @@ npx commit-in --force-conventional
 
 ```bash
 # Quick commit — stage everything, pick first suggestion, commit, push
-npx commit-in -a -y -c --push
+npx commitin -a -y -c --push
 
 # Preview what the AI sees without making any calls
-npx commit-in --echo
+npx commitin --echo
 
 # Offline mode — no internet, no API, just smart rules
-npx commit-in --offline
+npx commitin --offline
 
 The same rule-based engine also kicks in automatically if the AI service is
 down or rate limited, so you always get a suggestion — even when the AI can't
@@ -180,19 +180,19 @@ affected unit (e.g. `feat(task): add task controller`), but they can't look
 inside file contents, so they're more generic than the AI's.
 
 # Force a specific commit type
-npx commit-in -t fix
+npx commitin -t fix
 
 # Print suggestions without any prompts (great for scripts / pipes)
-npx commit-in --print
+npx commitin --print
 
 # Force a type and scope
-npx commit-in -t feat -s auth
+npx commitin -t feat -s auth
 
 # Get 5 suggestions instead of 3
-npx commit-in --count 5
+npx commitin --count 5
 
 # Dry run — see the message without committing
-npx commit-in --dry-run
+npx commitin --dry-run
 ```
 
 ---

@@ -1,7 +1,7 @@
 /**
  * Real-model evaluation harness.
  *
- * Runs the full prompt assembly + a call to your hosted commit-in service
+ * Runs the full prompt assembly + a call to your hosted commitin service
  * against the current repo's staged changes and prints parsed suggestions as
  * JSON for human review.
  *
@@ -94,7 +94,7 @@ const provider = new RemoteProvider({
   maxRetries: config.maxRetries,
 });
 
-console.log(`commit-in eval v${version()} | provider remote | files ${change.totals.files}`);
+console.log(`commitin eval v${version()} | provider remote | files ${change.totals.files}`);
 const raw = await provider.generate(request);
 const suggestions = parseSuggestions(raw, style, change.typeHint, config.count);
 console.log(JSON.stringify({ suggestions, style, requestLen: request.user.length }, null, 2));

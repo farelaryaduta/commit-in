@@ -4,7 +4,7 @@ import { createProgram } from "../src/cli";
 describe("cli program", () => {
   it("exposes a help text mentioning the command name", () => {
     const info = createProgram().helpInformation();
-    expect(info).toMatch(/Usage: commit-in/);
+    expect(info).toMatch(/Usage: commitin/);
     expect(info).toContain("git commit messages");
     expect(info).toContain("--echo");
   });
@@ -20,7 +20,7 @@ describe("cli program", () => {
         out += str;
       },
     });
-    expect(() => program.parse(["node", "commit-in", "--version"])).toThrow();
+    expect(() => program.parse(["node", "commitin", "--version"])).toThrow();
     expect(out.trim()).toMatch(/^\d+\.\d+\.\d+$/);
   });
 });

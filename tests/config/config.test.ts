@@ -7,7 +7,7 @@ import { loadConfig, ConfigError, findConfigFile } from "../../src/config";
 import { DEFAULTS } from "../../src/config";
 
 function tempDir(): { dir: string; cleanup: () => void } {
-  const dir = mkdtempSync(join(tmpdir(), "commit-in-config-"));
+  const dir = mkdtempSync(join(tmpdir(), "commitin-config-"));
   return { dir, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
